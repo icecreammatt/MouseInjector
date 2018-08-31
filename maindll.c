@@ -59,8 +59,8 @@ int geshowcrosshair = 0; // inject the always show ge crosshair hack on start
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved);
 static int Init(const HWND hW);
 static void End(void);
-static void StartPolling(void);
-static void StopPolling(void);
+static void StartInjection(void);
+static void StopInjection(void);
 static BOOL CALLBACK GUI_Config(HWND hW, UINT uMsg, WPARAM wParam, LPARAM lParam);
 static void GUI_Init(const HWND hW);
 static void GUI_Refresh(const HWND hW, const int revertbtn);
@@ -124,7 +124,7 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 	return TRUE;
 }
 //==========================================================================
-// Purpose: safely init plugin
+// Purpose: init manymouse and get first keyboard/mouse instance
 // Changed Globals: defaultmouse, defaultkeyboard
 //==========================================================================
 static int Init(const HWND hW)
@@ -145,12 +145,12 @@ static int Init(const HWND hW)
 	return 1;
 }
 //==========================================================================
-// Purpose: safely close plugin
+// Purpose: close plugin
 // Changed Globals: currentlyconfiguring, mousetoggle, lastinputbutton, rdramptr, romptr, ctrlptr
 //==========================================================================
 static void End(void)
 {
-	StopPolling();
+	StopInjection(); // stop device/injection thread
 	DEV_Quit(); // shutdown manymouse
 	DRP_Quit(); // shutdown discord rich presence
 	currentlyconfiguring = 0;
@@ -161,22 +161,22 @@ static void End(void)
 	ctrlptr = NULL;
 }
 //==========================================================================
-// Purpose: start device polling thread
+// Purpose: start device injection thread
 // Changed Globals: stopthread, injectthread
 //==========================================================================
-static void StartPolling(void)
+static void StartInjection(void)
 {
 	if(stopthread) // check if thread isn't running already
 	{
 		stopthread = 0;
-		pthread_create(&injectthread, NULL, DEV_PollInput, NULL); // start thread
+		pthread_create(&injectthread, NULL, DEV_InjectThread, NULL); // start thread
 	}
 }
 //==========================================================================
-// Purpose: stop device polling thread
+// Purpose: stop device injection thread
 // Changed Globals: stopthread, injectthread
 //==========================================================================
-static void StopPolling(void)
+static void StopInjection(void)
 {
 	if(!stopthread) // check if thread is running
 	{
@@ -603,7 +603,7 @@ static void GUI_DetectDevice(const HWND hW, const int buttonid)
 	SendMessage(GetDlgItem(hW, IDC_KEYBOARDSELECT), CB_SETCURSEL, DEV_TypeIndex(PROFILE[currentplayer].SETTINGS[KEYBOARD]), 0); // set keyboard combobox to new device
 }
 //==========================================================================
-// Purpose: load profile settings
+// Purpose: load profile settings (i'm really sorry about this mess)
 // Changed Globals: PROFILE, overridefov, geshowcrosshair, mouselockonfocus, mouseunlockonloss, mousetogglekey
 //==========================================================================
 static void INI_Load(const HWND hW, const int loadplayer)
@@ -626,29 +626,31 @@ static void INI_Load(const HWND hW, const int loadplayer)
 			counter++; // add 1 to counter, so the next line can be read
 		}
 		fclose(fileptr); // close the file stream
-		if(counter == TOTALLINES) // check mouseinjector.ini if it has the correct length
+		if(counter == TOTALLINES) // check mouseinjector.ini if it has the correct new lines
 		{
 			const int safesettings[2][10] = {{0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, {3, 100, 5, 18, 1, 1, 1, 1, 16, 16}}; // safe min/max values
 			int everythingisfine = 1; // for now...
-			for(int player = PLAYER1; player < ALLPLAYERS; player++) // load settings block first because if using WASD/ESDF config don't bother loading custom keys (settings are stored after button block)
+			for(int player = PLAYER1; player < ALLPLAYERS; player++) // load settings block first because if using WASD/ESDF config don't bother loading custom keys (settings are stored at end of file)
+			{
 				for(int index = 0; index < 10; index++)
-					if(everythingisfine && atoi(line[BUTTONBLKSIZE + player * 10 + index]) >= safesettings[0][index] && atoi(line[BUTTONBLKSIZE + player * 10 + index]) <= safesettings[1][index]) // invalid settings sets everythingisfine to 0
+					if(everythingisfine && atoi(line[BUTTONBLKSIZE + (player * 10) + index]) >= safesettings[0][index] && atoi(line[BUTTONBLKSIZE + (player * 10) + index]) <= safesettings[1][index]) // if everything is fine
 					{
 						if(loadplayer == ALLPLAYERS || player == loadplayer) // load everything if given ALLPLAYERS flag or filter loading to current player
-							PROFILE[player].SETTINGS[index] = atoi(line[BUTTONBLKSIZE + player * 10 + index]);
+							PROFILE[player].SETTINGS[index] = atoi(line[BUTTONBLKSIZE + (player * 10) + index]);
 					}
-					else
+					else // invalid settings, abort (this isn't fine)
 						everythingisfine = 0;
-			if(everythingisfine && atoi(line[TOTALLINES - 1]) > 0x00 && atoi(line[TOTALLINES - 1]) < 0xFF) // if settings block is OK and mousetogglekey key is valid
+			}
+			if(everythingisfine) // if settings block is OK
 			{
 				if(loadplayer == ALLPLAYERS) // only load if given ALLPLAYERS flag
 				{
-					overridefov = atoi(line[TOTALLINES - 5]) >= 40 && atoi(line[TOTALLINES - 5]) <= 120 ? atoi(line[TOTALLINES - 5]) : 60; // load overridefov
-					geshowcrosshair = atoi(line[TOTALLINES - 4]) == 0 ? 0 : 1; // load geshowcrosshair
-					mouselockonfocus = atoi(line[TOTALLINES - 3]) == 0 ? 0 : 1; // load mouselockonfocus
-					mouseunlockonloss = atoi(line[TOTALLINES - 2]) == 0 ? 0 : 1; // load mouseunlockonloss
-					mousetogglekey = atoi(line[TOTALLINES - 1]); // load mousetogglekey
-					if(mousetogglekey == VK_ESCAPE || mousetogglekey >= VK_LBUTTON && mousetogglekey <= VK_XBUTTON2 || mousetogglekey == VK_WHEELUP || mousetogglekey == VK_WHEELDOWN || mousetogglekey == VK_WHEELRIGHT || mousetogglekey == VK_WHEELLEFT) // if mousetogglekey is set to escape or a mouse button, reset to default key
+					overridefov = ClampInt(atoi(line[TOTALLINES - 5]), 40, 120); // load overridefov
+					geshowcrosshair = !(!atoi(line[TOTALLINES - 4])); // load geshowcrosshair
+					mouselockonfocus = !(!atoi(line[TOTALLINES - 3])); // load mouselockonfocus
+					mouseunlockonloss = !(!atoi(line[TOTALLINES - 2])); // load mouseunlockonloss
+					mousetogglekey = ClampInt(atoi(line[TOTALLINES - 1]), 0x00, 0xFF); // load mousetogglekey
+					if(!mousetogglekey || mousetogglekey == 0xFF || mousetogglekey == VK_ESCAPE || mousetogglekey >= VK_LBUTTON && mousetogglekey <= VK_XBUTTON2 || mousetogglekey == VK_WHEELUP || mousetogglekey == VK_WHEELDOWN || mousetogglekey == VK_WHEELRIGHT || mousetogglekey == VK_WHEELLEFT) // if mousetogglekey is set to none/escape/mouse button, reset to default key
 						mousetogglekey = 0x34;
 				}
 				for(int player = PLAYER1; player < ALLPLAYERS; player++)
@@ -658,28 +660,24 @@ static void INI_Load(const HWND hW, const int loadplayer)
 						if(PROFILE[player].SETTINGS[CONFIG] == DISABLED || PROFILE[player].SETTINGS[CONFIG] == CUSTOM) // only load keys if profile is disabled/custom, else skip
 						{
 							for(int button = 0; button < 16; button++)
-								if(everythingisfine && atoi(line[player * 16 + button]) >= 0x00 && atoi(line[player * 16 + button]) <= 0xFF && atoi(line[PRIMBTNBLKSIZE + player * 16 + button]) >= 0x00 && atoi(line[PRIMBTNBLKSIZE + player * 16 + button]) <= 0xFF) // stop reading file if invalid key detected and reset mouseinjector.ini
-								{
-									PROFILE[player].BUTTONPRIM[button] = atoi(line[player * 16 + button]);
-									PROFILE[player].BUTTONSEC[button] = atoi(line[PRIMBTNBLKSIZE + player * 16 + button]);
-									if(PROFILE[player].BUTTONPRIM[button] == VK_ESCAPE || PROFILE[player].BUTTONPRIM[button] == 0xFF) // set to none if escape/0xFF (escape can't be used for keys)
-										PROFILE[player].BUTTONPRIM[button] = 0;
-									if(PROFILE[player].BUTTONSEC[button] == VK_ESCAPE || PROFILE[player].BUTTONSEC[button] == 0xFF)
-										PROFILE[player].BUTTONSEC[button] = 0;
-								}
-								else
-									everythingisfine = 0;
+							{
+								PROFILE[player].BUTTONPRIM[button] = ClampInt(atoi(line[player * 16 + button]), 0x00, 0xFF);
+								PROFILE[player].BUTTONSEC[button] = ClampInt(atoi(line[PRIMBTNBLKSIZE + (player * 16) + button]), 0x00, 0xFF);
+								if(PROFILE[player].BUTTONPRIM[button] == VK_ESCAPE || PROFILE[player].BUTTONPRIM[button] == 0xFF) // set to none if escape/0xFF (escape can't be used for keys)
+									PROFILE[player].BUTTONPRIM[button] = 0;
+								if(PROFILE[player].BUTTONSEC[button] == VK_ESCAPE || PROFILE[player].BUTTONSEC[button] == 0xFF)
+									PROFILE[player].BUTTONSEC[button] = 0;
+							}
 						}
 						else
 							INI_SetConfig(player, PROFILE[player].SETTINGS[CONFIG]); // player is not using custom config, assign keys from function
-						if(DEV_Name(PROFILE[player].SETTINGS[MOUSE]) == NULL || DEV_Type(PROFILE[player].SETTINGS[MOUSE]) == 1) // device not connected or id no longer matches
+						if(DEV_Name(PROFILE[player].SETTINGS[MOUSE]) == NULL || DEV_Type(PROFILE[player].SETTINGS[MOUSE]) == 1) // device not connected or id is set used by a keyboard
 							PROFILE[player].SETTINGS[MOUSE] = defaultmouse;
-						if(DEV_Name(PROFILE[player].SETTINGS[KEYBOARD]) == NULL || DEV_Type(PROFILE[player].SETTINGS[KEYBOARD]) == 0) // device not connected or id no longer matches
+						if(DEV_Name(PROFILE[player].SETTINGS[KEYBOARD]) == NULL || DEV_Type(PROFILE[player].SETTINGS[KEYBOARD]) == 0) // device not connected or id is set used by a mouse
 							PROFILE[player].SETTINGS[KEYBOARD] = defaultkeyboard;
 					}
 				}
-				if(everythingisfine) // go home, everything's fine... uh how are you?
-					return;
+				return; // we're done
 			}
 		}
 		MessageBox(hW, "Loading mouseinjector.ini failed!\n\nInvalid settings detected, resetting to default...", "Mouse Injector - Error", MB_ICONERROR | MB_OK); // tell the user loading mouseinjector.ini failed
@@ -702,13 +700,13 @@ static void INI_Save(const HWND hW)
 	{
 		for(int player = PLAYER1; player < ALLPLAYERS; player++)
 			for(int button = 0; button < 16; button++)
-				fprintf(fileptr, "%d\n", PROFILE[player].BUTTONPRIM[button] >= 0x00 && PROFILE[player].BUTTONPRIM[button] < 0xFF ? PROFILE[player].BUTTONPRIM[button] : 0); // sanitize every possible route of file corruption
+				fprintf(fileptr, "%d\n", ClampInt(PROFILE[player].BUTTONPRIM[button], 0x00, 0xFF)); // sanitize save
 		for(int player = PLAYER1; player < ALLPLAYERS; player++)
 			for(int button = 0; button < 16; button++)
-				fprintf(fileptr, "%d\n", PROFILE[player].BUTTONSEC[button] >= 0x00 && PROFILE[player].BUTTONSEC[button] < 0xFF ? PROFILE[player].BUTTONSEC[button] : 0);
+				fprintf(fileptr, "%d\n", ClampInt(PROFILE[player].BUTTONSEC[button], 0x00, 0xFF));
 		for(int player = PLAYER1; player < ALLPLAYERS; player++)
 			for(int index = 0; index < 10; index++)
-				fprintf(fileptr, "%d\n", PROFILE[player].SETTINGS[index] >= 0 && PROFILE[player].SETTINGS[index] <= 100 ? PROFILE[player].SETTINGS[index] : 0);
+				fprintf(fileptr, "%d\n", ClampInt(PROFILE[player].SETTINGS[index], 0, 100));
 		fprintf(fileptr, "%d\n%d\n%d\n%d\n%d", overridefov, geshowcrosshair, mouselockonfocus, mouseunlockonloss, mousetogglekey);
 		fclose(fileptr); // close the file stream
 	}
@@ -884,7 +882,7 @@ DLLEXPORT void CALL ReadController(int Control, BYTE *Command)
 DLLEXPORT void CALL RomClosed(void)
 {
 	mousetoggle = 0;
-	StopPolling();
+	StopInjection();
 	GAME_Quit();
 }
 //==========================================================================
@@ -894,7 +892,7 @@ DLLEXPORT void CALL RomClosed(void)
 DLLEXPORT void CALL RomOpen(void)
 {
 	emulatorwindow = GetForegroundWindow();
-	StartPolling();
+	StartInjection();
 }
 //==========================================================================
 // Purpose: To pass the WM_KeyDown message from the emulator to the plugin

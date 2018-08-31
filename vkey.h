@@ -524,14 +524,13 @@ static struct VKeyInfo vkis[] =
 	AddVKey(VK_NONAME, "No Name"),
 	AddVKey(VK_PA1, "Pa1"),
 	AddVKey(VK_OEM_CLEAR, "Clear"),
-	AddVKey(0xFF, "None")
+	AddVKey(0xFF, "Invalid Key")
 };
 
 static LPCSTR GetKeyName(unsigned int VKey)
 {
-	unsigned int i;
-	for(i = 0; i < sizeof(vkis); i++)
+	for(unsigned int i = 0; i < sizeof(vkis); i++)
 		if(VKey == vkis[i].VKey)
 			return vkis[i].VKname;
-	return vkis[--i].VKname;
+	return vkis[0xFF].VKname; // return "Invalid Key"
 }

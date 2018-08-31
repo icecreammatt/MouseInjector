@@ -37,7 +37,6 @@
 
 static int alreadyexec = 0; // has init already exec?
 static int connected = 0; // number of devices connected
-static int togglebuffer = 0; // buffer cool down for mouse toggle
 static POINT lockpos; // coords for mouse lock position
 
 int windowactive = 1; // is emulator window active?
@@ -51,7 +50,7 @@ const char *DEV_Name(const int id);
 int DEV_Type(const int id);
 int DEV_TypeIndex(const int id);
 int DEV_TypeID(const int id, const int kbflag);
-void DEV_Sleep(unsigned int millisec);
+void DEV_Sleep(const unsigned int millisec);
 
 //==========================================================================
 // Purpose: First called upon device launch
@@ -84,15 +83,16 @@ void DEV_Quit(void)
 	connected = 0;
 }
 //==========================================================================
-// Purpose: Polls ManyMouse event for input
+// Purpose: Polls ManyMouse for input and injects into game
 // Changes Globals: a lot
 //==========================================================================
-void *DEV_PollInput()
+void *DEV_InjectThread()
 {
 	ManyMouseEvent event; // hold current input event (movement, buttons, ect)
-	int checkwindowtick = 0; // check if emulator window is in focus
 	memset(&DEVICE, 0, sizeof(DEVICE)); // clear device struct
-	togglebuffer = 0;
+	int checkwindowtick = 0; // check if emulator window is in focus
+	int togglebuffer = 0; // buffer cool down for mouse toggle
+	int ignoredevices = 0; // ignore device filtering flag (used if only 1 player is active)
 	while(!stopthread)
 	{
 		if(mousetoggle)
@@ -118,13 +118,14 @@ void *DEV_PollInput()
 		}
 		while(ManyMouse_PollEvent(&event))
 		{
-			int ignoredevices = 0;
 			for(int player = PLAYER1; player < ALLPLAYERS; player++)
 			{
 				if(PROFILE[player].SETTINGS[CONFIG] == DISABLED) // don't check for disabled players
 					continue;
-				if(ONLY1PLAYERACTIVE) // if there is only one active player then accept all devices as input
+				if(ONLY1PLAYERACTIVE) // do not filter devices if only one player is active
 					ignoredevices = 1;
+				else
+					ignoredevices = 0;
 				if(PROFILE[player].SETTINGS[MOUSE] == (int)event.device || ignoredevices) // mouse movement
 				{
 					if(event.type == MANYMOUSE_EVENT_RELMOTION && mousetoggle)
@@ -244,7 +245,7 @@ int DEV_ReturnKey(void)
 		else if(event.type == MANYMOUSE_EVENT_KEYBOARD)
 			key = event.item;
 	}
-	return key < 0xFF ? key : 0; // if key not recognized send none key
+	return ClampInt(key, 0, 0xFF); // sanity check key return
 }
 //==========================================================================
 // Purpose: Returns device id of detected input
@@ -311,7 +312,7 @@ int DEV_TypeID(const int id, const int kbflag)
 //==========================================================================
 // Purpose: Pauses whatever for x amount of milliseconds
 //==========================================================================
-void DEV_Sleep(unsigned int millisec)
+void DEV_Sleep(const unsigned int millisec)
 {
 	Sleep(millisec);
 }

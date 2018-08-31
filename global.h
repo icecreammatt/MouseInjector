@@ -17,7 +17,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, visit http://www.gnu.org/licenses/gpl-2.0.html
 //==========================================================================
-#define __MOUSE_INECTOR_VERSION__ "V1.7"
+#define __MOUSE_INECTOR_VERSION__ "V1.8"
 #define __CURRENTYEAR__ "2018"
 #define CONSOLE { AllocConsole(); AttachConsole(GetCurrentProcessId()); freopen("CON", "w", stdout); }
 #define ONLY1PLAYERACTIVE \
@@ -26,7 +26,7 @@ PROFILE[PLAYER1].SETTINGS[CONFIG] == DISABLED && PROFILE[PLAYER2].SETTINGS[CONFI
 PROFILE[PLAYER1].SETTINGS[CONFIG] == DISABLED && PROFILE[PLAYER2].SETTINGS[CONFIG] == DISABLED && PROFILE[PLAYER3].SETTINGS[CONFIG] != DISABLED && PROFILE[PLAYER4].SETTINGS[CONFIG] == DISABLED || \
 PROFILE[PLAYER1].SETTINGS[CONFIG] == DISABLED && PROFILE[PLAYER2].SETTINGS[CONFIG] == DISABLED && PROFILE[PLAYER3].SETTINGS[CONFIG] == DISABLED && PROFILE[PLAYER4].SETTINGS[CONFIG] != DISABLED
 
-static inline float ClampFloat(const float value, const float min, const float max) // used commonly for game drivers
+static inline float ClampFloat(const float value, const float min, const float max)
 {
 	const float test = value < min ? min : value;
 	return test > max ? max : test;

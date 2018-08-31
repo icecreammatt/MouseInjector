@@ -21,11 +21,11 @@ extern int windowactive;
 
 extern int DEV_Init(void);
 extern void DEV_Quit(void);
-extern void *DEV_PollInput();
+extern void *DEV_InjectThread();
 extern int DEV_ReturnKey(void);
 extern int DEV_ReturnDeviceID(const int kbflag);
 extern const char *DEV_Name(const int id);
 extern int DEV_Type(const int id);
 extern int DEV_TypeIndex(const int id);
 extern int DEV_TypeID(const int id, const int kbflag);
-extern void DEV_Sleep(unsigned int millisec);
+extern void DEV_Sleep(const unsigned int millisec);
