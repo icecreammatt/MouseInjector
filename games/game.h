@@ -20,7 +20,7 @@
 typedef struct
 {
     const char *Name;
-    int (*Status)(void);
+	int (*Status)(void);
 	void (*Inject)(void);
 	void (*Quit)(void);
 } GAMEDRIVER;
