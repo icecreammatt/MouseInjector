@@ -42,7 +42,7 @@
 #define GE_currentweapon 0x800D37D0 - 0x800D2F60
 #define GE_multipausemenu 0x800A9D24 - 0x800A7360
 // STATIC ADDRESSES BELOW
-#define BONDDATA (unsigned int)EMU_ReadInt(0x8007A0B0, 0) // playable character point (used for all players)
+#define BONDDATA (unsigned int)EMU_ReadInt(0x8007A0B0) // playable character point (used for all players)
 #define GE_camera 0x80036494 // camera flag (0 = multiplayer, 1 = map overview, 2 = start flyby, 3 = in flyby, 4 = player in control, 5 = trigger restart map)
 #define GE_exit 0x800364B0 // exit flag (0 = disable controls, 1 = enable controls)
 #define GE_pause 0x80048370 // pause flag (1 = GE is paused)
@@ -56,7 +56,8 @@
 #define GE_defaultfovinit 0x000CF838 // field of view init value (rom)
 #define GE_defaultfovzoom 0x000B78DC // field of view default for zoom (rom)
 #define GE_defaultzoomspeed 0x8004F1A8 // default zoom speed
-#define GE_showcrosshair 0x0009F128 // show cursor code (rom)
+#define GE_showcrosshair 0x0009F128 // show crosshair code (rom)
+#define GE_crosshairimage 0x0029DE8C // crosshair image (rom)
 #define GE_introcounter 0x8002A8CC // counter for intro
 #define GE_seenintroflag 0x8002A930 // seen intro flag
 
@@ -92,8 +93,8 @@ const GAMEDRIVER *GAME_GOLDENEYE007 = &GAMEDRIVER_INTERFACE;
 //==========================================================================
 static int GE_Status(void)
 {
-	const int ge_camera = EMU_ReadInt(GE_camera, 0), ge_page = EMU_ReadInt(GE_menupage, 0), ge_pause = EMU_ReadInt(GE_pause, 0), ge_exit = EMU_ReadInt(GE_exit, 0);
-	const float ge_crosshairx = EMU_ReadFloat(GE_menux, 0), ge_crosshairy = EMU_ReadFloat(GE_menuy, 0);
+	const int ge_camera = EMU_ReadInt(GE_camera), ge_page = EMU_ReadInt(GE_menupage), ge_pause = EMU_ReadInt(GE_pause), ge_exit = EMU_ReadInt(GE_exit);
+	const float ge_crosshairx = EMU_ReadFloat(GE_menux), ge_crosshairy = EMU_ReadFloat(GE_menuy);
 	if(ge_camera >= 0 && ge_camera <= 10 && ge_page >= -1 && ge_page <= 25 && ge_pause >= 0 && ge_pause <= 1 && ge_exit >= 0 && ge_exit <= 1 && ge_crosshairx >= 20 && ge_crosshairx <= 420 && ge_crosshairy >= 20 && ge_crosshairy <= 310) // if GoldenEye 007 is current game
 		return 1;
 	return 0;
@@ -104,15 +105,15 @@ static int GE_Status(void)
 //==========================================================================
 static void GE_DetectMap(void)
 {
-	if(playerbase[PLAYER1] != BONDDATA && (EMU_ReadInt(GE_camera, 0) == 1 || EMU_ReadInt(GE_camera, 0) == 4 || EMU_ReadInt(GE_camera, 0) == 9))
+	if(playerbase[PLAYER1] != BONDDATA && (EMU_ReadInt(GE_camera) == 1 || EMU_ReadInt(GE_camera) == 4 || EMU_ReadInt(GE_camera) == 9))
 	{
-		unsigned int pointerdump[64];
+		unsigned int pointerdump[128];
 		for(int player = PLAYER1; player < ALLPLAYERS; player++)
 		{
 			playerbase[player] = 0; // reset playerbase for all players
 			GE_ResetCrouchToggle(player); // reset crouch toggle on new map
 		}
-		for(int index = 0; index < 64; index++)
+		for(int index = 0; index < 128; index++)
 		{
 			pointerdump[index] = BONDDATA;
 			DEV_Sleep(1);
@@ -120,7 +121,7 @@ static void GE_DetectMap(void)
 		GE_SortArray((int *)pointerdump, sizeof pointerdump / sizeof pointerdump[0]);
 		playerbase[PLAYER1] = pointerdump[0];
 		int playerfound = PLAYER1;
-		for(int index = 0; index < 64; index++)
+		for(int index = 0; index < 128; index++)
 		{
 			if(playerbase[PLAYER1] != pointerdump[index] && playerfound == PLAYER1)
 			{
@@ -153,29 +154,29 @@ static void GE_DetectMap(void)
 static void GE_Inject(void)
 {
 	GE_DetectMap();
-	if(EMU_ReadInt(GE_menupage, 0) < 1) // hacks can only be injected at boot sequence before code blocks are cached, so inject until the main menu
+	if(EMU_ReadInt(GE_menupage) < 1) // hacks can only be injected at boot sequence before code blocks are cached, so inject until the main menu
 		GE_InjectHacks();
 	for(int player = PLAYER1; player < ALLPLAYERS; player++)
 	{
 		if(PROFILE[player].SETTINGS[CONFIG] == DISABLED) // bypass disabled players
 			continue;
-		const int camera = EMU_ReadInt(GE_camera, 0);
-		const int dead = EMU_ReadInt(playerbase[player], GE_deathflag);
-		const int watch = EMU_ReadInt(playerbase[player], GE_watch);
-		const int exit = EMU_ReadInt(GE_exit, 0);
-		const int pause = EMU_ReadInt(GE_pause, 0);
-		const int aimingflag = EMU_ReadInt(playerbase[player], GE_aimingflag);
-		const int menupage = EMU_ReadInt(GE_menupage, 0);
-		const int tankflag = EMU_ReadInt(GE_tankflag, 0);
-		const int mproundend = EMU_ReadInt(GE_matchended, 0);
-		const int mppausemenu = EMU_ReadInt(playerbase[player], GE_multipausemenu);
+		const int camera = EMU_ReadInt(GE_camera);
+		const int dead = EMU_ReadInt(playerbase[player] + GE_deathflag);
+		const int watch = EMU_ReadInt(playerbase[player] + GE_watch);
+		const int exit = EMU_ReadInt(GE_exit);
+		const int pause = EMU_ReadInt(GE_pause);
+		const int aimingflag = EMU_ReadInt(playerbase[player] + GE_aimingflag);
+		const int menupage = EMU_ReadInt(GE_menupage);
+		const int tankflag = EMU_ReadInt(GE_tankflag);
+		const int mproundend = EMU_ReadInt(GE_matchended);
+		const int mppausemenu = EMU_ReadInt(playerbase[player] + GE_multipausemenu);
 		const int cursoraimingflag = PROFILE[player].SETTINGS[GEAIMMODE] && aimingflag ? 1 : 0;
-		const float fov = EMU_ReadFloat(playerbase[player], GE_fov);
+		const float fov = EMU_ReadFloat(playerbase[player] + GE_fov);
 		const float basefov = fov > 60.0f ? (float)overridefov : 60.0f;
 		const float mouseaccel = PROFILE[player].SETTINGS[ACCELERATION] ? sqrt(DEVICE[player].XPOS * DEVICE[player].XPOS + DEVICE[player].YPOS * DEVICE[player].YPOS) / TICKRATE / 12.0f * PROFILE[player].SETTINGS[ACCELERATION] : 0;
 		const float sensitivity = PROFILE[player].SETTINGS[SENSITIVITY] / 40.0f * fmax(mouseaccel, 1);
 		const float gunsensitivity = sensitivity * (PROFILE[player].SETTINGS[CROSSHAIR] / 2.5f);
-		float camx = EMU_ReadFloat(playerbase[player], GE_camx), camy = EMU_ReadFloat(playerbase[player], GE_camy);
+		float camx = EMU_ReadFloat(playerbase[player] + GE_camx), camy = EMU_ReadFloat(playerbase[player] + GE_camy);
 		if(camx >= 0 && camx <= 360 && camy >= -90 && camy <= 90 && fov >= 1 && fov <= 120 && dead == 0 && watch == 0 && pause == 0 && (camera == 4 || camera == 0) && exit == 1 && menupage == 11 && !mproundend && !mppausemenu) // if safe to inject
 		{
 			GE_AimMode(player, cursoraimingflag, fov / basefov);
@@ -190,12 +191,12 @@ static void GE_Inject(void)
 					camx += 360;
 				else if(camx >= 360)
 					camx -= 360;
-				EMU_WriteFloat(playerbase[player], GE_camx, camx);
+				EMU_WriteFloat(playerbase[player] + GE_camx, camx);
 			}
 			else // player is in tank
 			{
 				GE_ResetCrouchToggle(player); // reset crouch toggle if in tank
-				float tankx = EMU_ReadFloat(GE_tankxrot, 0);
+				float tankx = EMU_ReadFloat(GE_tankxrot);
 				if(!cursoraimingflag)
 					tankx += DEVICE[player].XPOS / 10.0f * sensitivity / (360 / TANKXROTATIONLIMIT * 2.5) * (fov / basefov);
 				else
@@ -204,51 +205,51 @@ static void GE_Inject(void)
 					tankx += TANKXROTATIONLIMIT;
 				else if(tankx >= TANKXROTATIONLIMIT)
 					tankx -= TANKXROTATIONLIMIT;
-				EMU_WriteFloat(GE_tankxrot, 0, tankx);
+				EMU_WriteFloat(GE_tankxrot, tankx);
 			}
 			if(!cursoraimingflag)
 				camy += (!PROFILE[player].SETTINGS[INVERTPITCH] ? -DEVICE[player].YPOS : DEVICE[player].YPOS) / 10.0f * sensitivity * (fov / basefov);
 			else
 				camy += -aimy[player] * (fov / basefov);
 			camy = ClampFloat(camy, tankflag ? -20 : -90, 90); // tank limits player from looking down -20
-			EMU_WriteFloat(playerbase[player], GE_camy, camy);
+			EMU_WriteFloat(playerbase[player] + GE_camy, camy);
 			if(PROFILE[player].SETTINGS[CROSSHAIR] && !cursoraimingflag) // if crosshair movement is enabled and player isn't aiming (don't calculate weapon movement while the player is in aim mode)
 			{
 				if(!tankflag)
 				{
-					float gunx = EMU_ReadFloat(playerbase[player], GE_gunx), crosshairx = EMU_ReadFloat(playerbase[player], GE_crosshairx); // after camera x and y have been calculated and injected, calculate the gun/crosshair movement
+					float gunx = EMU_ReadFloat(playerbase[player] + GE_gunx), crosshairx = EMU_ReadFloat(playerbase[player] + GE_crosshairx); // after camera x and y have been calculated and injected, calculate the gun/crosshair movement
 					gunx += DEVICE[player].XPOS / (!aimingflag ? 10.0f : 40.0f) * gunsensitivity * (fov / basefov) * 0.019f;
 					crosshairx += DEVICE[player].XPOS / (!aimingflag ? 10.0f : 40.0f) * gunsensitivity * (fov / 4 / (basefov / 4)) * 0.01912f;
 					if(aimingflag) // emulate cursor moving back to the center
 						gunx /= emuoverclock ? 1.03f : 1.07f, crosshairx /= emuoverclock ? 1.03f : 1.07f;
 					gunx = ClampFloat(gunx, -GUNAIMLIMIT, GUNAIMLIMIT);
 					crosshairx = ClampFloat(crosshairx, -CROSSHAIRLIMIT, CROSSHAIRLIMIT);
-					EMU_WriteFloat(playerbase[player], GE_gunx, gunx);
-					EMU_WriteFloat(playerbase[player], GE_crosshairx, crosshairx);
+					EMU_WriteFloat(playerbase[player] + GE_gunx, gunx);
+					EMU_WriteFloat(playerbase[player] + GE_crosshairx, crosshairx);
 				}
 				if((!tankflag && camy > -90 || tankflag && camy > -20) && camy < 90) // only allow player's gun to pitch within a valid range
 				{
-					float guny = EMU_ReadFloat(playerbase[player], GE_guny), crosshairy = EMU_ReadFloat(playerbase[player], GE_crosshairy);
+					float guny = EMU_ReadFloat(playerbase[player] + GE_guny), crosshairy = EMU_ReadFloat(playerbase[player] + GE_crosshairy);
 					guny += (!PROFILE[player].SETTINGS[INVERTPITCH] ? DEVICE[player].YPOS : -DEVICE[player].YPOS) / (!aimingflag ? 40.0f : 20.0f) * gunsensitivity * (fov / basefov) * 0.025f;
 					crosshairy += (!PROFILE[player].SETTINGS[INVERTPITCH] ? DEVICE[player].YPOS : -DEVICE[player].YPOS) / (!aimingflag ? 40.0f : 20.0f) * gunsensitivity * (fov / 4 / (basefov / 4)) * 0.0225f;
 					if(aimingflag)
 						guny /= emuoverclock ? 1.15f : 1.35f, crosshairy /= emuoverclock ? 1.15f : 1.35f;
 					guny = ClampFloat(guny, -GUNAIMLIMIT, GUNAIMLIMIT);
 					crosshairy = ClampFloat(crosshairy, -CROSSHAIRLIMIT, CROSSHAIRLIMIT);
-					EMU_WriteFloat(playerbase[player], GE_guny, guny);
-					EMU_WriteFloat(playerbase[player], GE_crosshairy, crosshairy);
+					EMU_WriteFloat(playerbase[player] + GE_guny, guny);
+					EMU_WriteFloat(playerbase[player] + GE_crosshairy, crosshairy);
 				}
 			}
 		}
 		else if(player == PLAYER1 && menupage != 11 && menupage != 23) // if user is in menu (only player 1 can control menu)
 		{
-			float menucrosshairx = EMU_ReadFloat(GE_menux, 0), menucrosshairy = EMU_ReadFloat(GE_menuy, 0);
+			float menucrosshairx = EMU_ReadFloat(GE_menux), menucrosshairy = EMU_ReadFloat(GE_menuy);
 			menucrosshairx += DEVICE[player].XPOS / 10.0f * sensitivity * 6;
 			menucrosshairy += DEVICE[player].YPOS / 10.0f * sensitivity * (400.0f / 290.0f * 6); // y is a little weaker then x in the menu so add more power to make it feel even with x axis
 			menucrosshairx = ClampFloat(menucrosshairx, 20, 420);
 			menucrosshairy = ClampFloat(menucrosshairy, 20, 310);
-			EMU_WriteFloat(GE_menux, 0, menucrosshairx);
-			EMU_WriteFloat(GE_menuy, 0, menucrosshairy);
+			EMU_WriteFloat(GE_menux, menucrosshairx);
+			EMU_WriteFloat(GE_menuy, menucrosshairy);
 		}
 		if(dead || menupage != 11) // if player is dead or in menu, reset crouch toggle
 			GE_ResetCrouchToggle(player);
@@ -275,9 +276,9 @@ static void GE_Crouch(const int player)
 		crouchheld = crouchstance[player];
 	}
 	if(crouchheld) // user is holding down the crouch button
-		EMU_WriteInt(playerbase[player], GE_crouchflag, 0); // set in-game crouch flag to lowest point
+		EMU_WriteInt(playerbase[player] + GE_crouchflag, 0); // set in-game crouch flag to lowest point
 	else // player isn't holding down crouch
-		EMU_WriteInt(playerbase[player], GE_crouchflag, 2); // force standing flag value
+		EMU_WriteInt(playerbase[player] + GE_crouchflag, 2); // force standing flag value
 }
 //==========================================================================
 // Purpose: replicate the original aiming system, uses aimx/y to move screen when crosshair is on border of screen
@@ -285,8 +286,8 @@ static void GE_Crouch(const int player)
 //==========================================================================
 static void GE_AimMode(const int player, const int aimingflag, const float fov)
 {
-	const float crosshairx = EMU_ReadFloat(playerbase[player], GE_crosshairx), crosshairy = EMU_ReadFloat(playerbase[player], GE_crosshairy), offsetpos[2][33] = {{0, 0, 0, 0, 0.1625, 0.1625, 0.15, 0.5, 0.8, 0.4, 0.5, 0.5, 0.48, 0.9, 0.25, 0.6, 0.6, 0.7, 0.25, 0.15, 0.1625, 0.1625, 0.5, 0.5, 0.9, 0.9, 0, 0, 0, 0, 0, 0.4}, {0, 0, 0, 0, 0.1, 0.1, 0.2, 0.325, 1, 0.3, 0.425, 0.425, 0.45, 0.95, 0.1, 0.55, 0.5, 0.7, 0.25, 0.1, 0.1, 0.1, 0.275, 1, 0.9, 0.8, 0, 0, 0, 0, 0, 0.25}}; // table of X/Y offset for weapons
-	const int currentweapon = EMU_ReadInt(playerbase[player], GE_currentweapon);
+	const float crosshairx = EMU_ReadFloat(playerbase[player] + GE_crosshairx), crosshairy = EMU_ReadFloat(playerbase[player] + GE_crosshairy), offsetpos[2][33] = {{0, 0, 0, 0, 0.1625, 0.1625, 0.15, 0.5, 0.8, 0.4, 0.5, 0.5, 0.48, 0.9, 0.25, 0.6, 0.6, 0.7, 0.25, 0.15, 0.1625, 0.1625, 0.5, 0.5, 0.9, 0.9, 0, 0, 0, 0, 0, 0.4}, {0, 0, 0, 0, 0.1, 0.1, 0.2, 0.325, 1, 0.3, 0.425, 0.425, 0.45, 0.95, 0.1, 0.55, 0.5, 0.7, 0.25, 0.1, 0.1, 0.1, 0.275, 1, 0.9, 0.8, 0, 0, 0, 0, 0, 0.25}}; // table of X/Y offset for weapons
+	const int currentweapon = EMU_ReadInt(playerbase[player] + GE_currentweapon);
 	const float threshold = 0.72f, speed = 475.f, sensitivity = 292.f;
 	if(aimingflag) // if player is aiming
 	{
@@ -295,10 +296,10 @@ static void GE_AimMode(const int player, const int aimingflag, const float fov)
 		crosshairposy[player] += (!PROFILE[player].SETTINGS[INVERTPITCH] ? DEVICE[player].YPOS : -DEVICE[player].YPOS) / 10.0f * (PROFILE[player].SETTINGS[SENSITIVITY] / sensitivity) * fmax(mouseaccel, 1);
 		crosshairposx[player] = ClampFloat(crosshairposx[player], -CROSSHAIRLIMIT, CROSSHAIRLIMIT); // apply clamp then inject
 		crosshairposy[player] = ClampFloat(crosshairposy[player], -CROSSHAIRLIMIT, CROSSHAIRLIMIT);
-		EMU_WriteFloat(playerbase[player], GE_crosshairx, crosshairposx[player]);
-		EMU_WriteFloat(playerbase[player], GE_crosshairy, crosshairposy[player]);
-		EMU_WriteFloat(playerbase[player], GE_gunx, crosshairposx[player] * (1.11f + (currentweapon >= 0 && currentweapon <= 32 ? offsetpos[0][currentweapon] : 0.15f) * 1.5f) + fov - 1); // calculate and inject the gun angles (uses pre-made pos table or if unknown weapon use fail-safe value)
-		EMU_WriteFloat(playerbase[player], GE_guny, crosshairposy[player] * (1.11f + (currentweapon >= 0 && currentweapon <= 32 ? offsetpos[1][currentweapon] : 0) * 1.5f) + fov - 1);
+		EMU_WriteFloat(playerbase[player] + GE_crosshairx, crosshairposx[player]);
+		EMU_WriteFloat(playerbase[player] + GE_crosshairy, crosshairposy[player]);
+		EMU_WriteFloat(playerbase[player] + GE_gunx, crosshairposx[player] * (1.11f + (currentweapon >= 0 && currentweapon <= 32 ? offsetpos[0][currentweapon] : 0.15f) * 1.5f) + fov - 1); // calculate and inject the gun angles (uses pre-made pos table or if unknown weapon use fail-safe value)
+		EMU_WriteFloat(playerbase[player] + GE_guny, crosshairposy[player] * (1.11f + (currentweapon >= 0 && currentweapon <= 32 ? offsetpos[1][currentweapon] : 0) * 1.5f) + fov - 1);
 		if(crosshairx > 0 && crosshairx / CROSSHAIRLIMIT > threshold) // if crosshair is within threshold of the border then calculate a linear scrolling speed and enable mouselook
 			aimx[player] = (crosshairx / CROSSHAIRLIMIT - threshold) * speed * TIMESTEP;
 		else if(crosshairx < 0 && crosshairx / CROSSHAIRLIMIT < -threshold)
@@ -338,7 +339,7 @@ static void GE_Controller(void)
 		CONTROLLER[player].X_AXIS = DEVICE[player].ARROW[0] + DEVICE[player].ARROW[1];
 		CONTROLLER[player].Y_AXIS = DEVICE[player].ARROW[2] + DEVICE[player].ARROW[3];
 	}
-	if(EMU_ReadInt(GE_menupage, 0) != 11 && !CONTROLLER[PLAYER1].B_BUTTON) // pressing aim will act like the back button (only in menus and for player 1)
+	if(EMU_ReadInt(GE_menupage) != 11 && !CONTROLLER[PLAYER1].B_BUTTON) // pressing aim will act like the back button (only in menus and for player 1)
 		CONTROLLER[PLAYER1].B_BUTTON = DEVICE[PLAYER1].BUTTONPRIM[AIM] || DEVICE[PLAYER1].BUTTONSEC[AIM];
 }
 //==========================================================================
@@ -357,14 +358,18 @@ static void GE_InjectHacks(void)
 		EMU_WriteROM(GE_defaultfovinit, 0x3C010000 + (short)(unsignedinteger / 0x10000));
 		EMU_WriteROM(GE_defaultfovzoom, 0x3C010000 + (short)(unsignedinteger / 0x10000));
 		if(overridefov > 60)
-			EMU_WriteFloat(GE_defaultzoomspeed, 0, (overridefov - 60) * ((1.7f - 0.909091f) / 60.0f) + 0.909091f); // adjust zoom speed default (0.909091 default, 1.7 max)
+			EMU_WriteFloat(GE_defaultzoomspeed, (overridefov - 60) * ((1.7f - 0.909091f) / 60.0f) + 0.909091f); // adjust zoom speed default (0.909091 default, 1.7 max)
 	}
 	if(geshowcrosshair) // inject show crosshair hack
-		EMU_WriteROM(GE_showcrosshair, 0x200E0000); // replace lw $t6, 0x1128 (8C4E1128) with add $t6, $zero, 0 (200E0000)
+	{
+		EMU_WriteROM(GE_showcrosshair, 0x00007025); // replace lw $t6, 0x1128 ($v0) (8C4E1128) with or $t6, $r0, $r0 (00007025)
+		if(EMU_ReadROM(0x28) != 0x45522020) // if ROM isn't Goldfinger 64 (why? because GF64 replaced beta crosshair image with ammo icon)
+			EMU_WriteROM(GE_crosshairimage, 0x000008BD); // replace crosshair image with beta crosshair
+	}
 	if(CONTROLLER[PLAYER1].Z_TRIG && CONTROLLER[PLAYER1].R_TRIG) // skip intros if holding down fire + aim
 	{
-		EMU_WriteInt(GE_introcounter, 0, 0x00001000);
-		EMU_WriteInt(GE_seenintroflag, 0, 0);
+		EMU_WriteInt(GE_introcounter, 0x00001000);
+		EMU_WriteInt(GE_seenintroflag, 0);
 	}
 }
 //==========================================================================

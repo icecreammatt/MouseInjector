@@ -26,67 +26,67 @@
 #define GARBAGEINT (int)0xABADC0DE
 
 //==========================================================================
-// Purpose: read short from memory and then return memory value
-// Parameter: address location plus offset
+// Purpose: read short from memory
+// Parameter: address
 //==========================================================================
-static inline short EMU_ReadShort(const unsigned int addr, const unsigned int offset)
+static inline short EMU_ReadShort(const unsigned int addr)
 {
-	return WITHINRANGE ? LOAD_SHALF_PARAM(addr + offset + 2) : GARBAGESHORT; // return garbage if request invalid location
+	return WITHINRANGE ? LOAD_SHALF_PARAM(addr) : GARBAGESHORT; // return garbage if request invalid location
 }
 //==========================================================================
-// Purpose: read int from memory and then return memory value
-// Parameter: address location plus offset
+// Purpose: write short to memory location
+// Parameter: address, value
 //==========================================================================
-static inline int EMU_ReadInt(const unsigned int addr, const unsigned int offset)
+static inline void EMU_WriteShort(const unsigned int addr, const short value)
 {
-	return WITHINRANGE ? LOAD_SWORD_PARAM(addr + offset) : GARBAGEINT;
+	if(WITHINRANGE)
+		LOAD_SHALF_PARAM(addr) = value;
 }
 //==========================================================================
-// Purpose: read float from memory and then return memory value
-// Parameter: address location plus offset
+// Purpose: read int from memory
+// Parameter: address
 //==========================================================================
-static inline float EMU_ReadFloat(const unsigned int addr, const unsigned int offset)
+static inline int EMU_ReadInt(const unsigned int addr)
 {
-	return WITHINRANGE ? *((float *)&LOAD_UWORD_PARAM(addr + offset)) : GARBAGEINT;
+	return WITHINRANGE ? LOAD_SWORD_PARAM(addr) : GARBAGEINT;
 }
 //==========================================================================
-// Purpose: read int from emulator's copy of rom and then return memory value
-// Parameter: address location plus offset
+// Purpose: write int to memory location
+// Parameter: address, value
+//==========================================================================
+static inline void EMU_WriteInt(const unsigned int addr, const int value)
+{
+	if(WITHINRANGE)
+		LOAD_SWORD_PARAM(addr) = value;
+}
+//==========================================================================
+// Purpose: read float from memory
+// Parameter: address
+//==========================================================================
+static inline float EMU_ReadFloat(const unsigned int addr)
+{
+	return WITHINRANGE ? *((float *)&LOAD_UWORD_PARAM(addr)) : GARBAGEINT;
+}
+//==========================================================================
+// Purpose: write float to memory location
+// Parameter: address, value
+//==========================================================================
+static inline void EMU_WriteFloat(const unsigned int addr, const float value)
+{
+	if(WITHINRANGE)
+		LOAD_UWORD_PARAM(addr) = *(unsigned int *)(&value);
+}
+//==========================================================================
+// Purpose: read int from emulator's copy of rom
+// Parameter: address
 //==========================================================================
 static inline unsigned EMU_ReadROM(const unsigned int addr)
 {
 	return (unsigned)romptr[addr / 0x4];
 }
 //==========================================================================
-// Purpose: write short to memory location
-// Parameter: address location, offset and value
-//==========================================================================
-static inline void EMU_WriteShort(const unsigned int addr, const unsigned int offset, const short value)
-{
-	if(WITHINRANGE)
-		LOAD_SHALF_PARAM(addr + offset + 2) = value;
-}
-//==========================================================================
-// Purpose: write int to memory location
-// Parameter: address location, offset and value
-//==========================================================================
-static inline void EMU_WriteInt(const unsigned int addr, const unsigned int offset, const int value)
-{
-	if(WITHINRANGE)
-		LOAD_SWORD_PARAM(addr + offset) = value;
-}
-//==========================================================================
-// Purpose: write float to memory location
-// Parameter: address location, offset and value
-//==========================================================================
-static inline void EMU_WriteFloat(const unsigned int addr, const unsigned int offset, const float value)
-{
-	if(WITHINRANGE)
-		LOAD_UWORD_PARAM(addr + offset) = *(unsigned int *)(&value);
-}
-//==========================================================================
 // Purpose: write to emulator's copy of rom
-// Parameter: address location and value
+// Parameter: address, value
 //==========================================================================
 static inline void EMU_WriteROM(const unsigned int addr, const unsigned int value)
 {

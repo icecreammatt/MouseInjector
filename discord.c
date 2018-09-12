@@ -86,26 +86,26 @@ void DRP_Update(void)
 		if(EMU_ReadROM(ROMCRC1) == GECRC1 && EMU_ReadROM(ROMCRC2) == GECRC2) // check if official GE rom
 		{
 			presence.largeImageKey = "ge"; // large default icon (not in-game)
-			if(EMU_ReadInt(GE_menupage, 0) == 11) // if in-game
+			if(EMU_ReadInt(GE_menupage) == 11) // if in-game
 			{
 				presence.smallImageKey = "geingame"; // set small icon
-				presence.details = gestagenames[ClampInt(EMU_ReadInt(GE_stageid, 0), 0x00, 0x39)]; // set details to map name (after clamping)
-				int mpflag = EMU_ReadInt(GE_gamemode, 0) == 1; // set to 1 if gamemode is multiplayer (0 = sp, 1 = mp, 2 = cheats)
-				presence.state = !mpflag ? gedifficulty[ClampInt(EMU_ReadInt(GE_difficulty, 0), 0, 3)] : "Multiplayer"; // set difficulty/multiplayer to state
-				if(EMU_ReadInt(GE_camera, 0) == 4 || EMU_ReadInt(GE_camera, 0) == 0) // if in gameplay mode (not intro swirl), calculate time
+				presence.details = gestagenames[ClampInt(EMU_ReadInt(GE_stageid), 0x00, 0x39)]; // set details to map name (after clamping)
+				int mpflag = EMU_ReadInt(GE_gamemode) == 1; // set to 1 if gamemode is multiplayer (0 = sp, 1 = mp, 2 = cheats)
+				presence.state = !mpflag ? gedifficulty[ClampInt(EMU_ReadInt(GE_difficulty), 0, 3)] : "Multiplayer"; // set difficulty/multiplayer to state
+				if(EMU_ReadInt(GE_camera) == 4 || EMU_ReadInt(GE_camera) == 0) // if in gameplay mode (not intro swirl), calculate time
 				{
 					time_t currenttime = time(NULL); // get current time from OS
-					presence.startTimestamp = currenttime - (EMU_ReadInt(!mpflag ? GE_sptime : GE_mptime, 0) / 60); // convert in-game time (60 Hz) to seconds and subtract from current time to get starting time for current map
+					presence.startTimestamp = currenttime - (EMU_ReadInt(!mpflag ? GE_sptime : GE_mptime) / 60); // convert in-game time (60 Hz) to seconds and subtract from current time to get starting time for current map
 				}
 				char thumbnailid[0x5];
-				sprintf(thumbnailid, "ge%1.2x", EMU_ReadInt(GE_stageid, 0)); // set thumbnail id
+				sprintf(thumbnailid, "ge%1.2x", EMU_ReadInt(GE_stageid)); // set thumbnail id
 				presence.largeImageKey = thumbnailid;
 			}
 			else // not in-game
 			{
-				if(EMU_ReadInt(GE_menupage, 0) >= -1 && EMU_ReadInt(GE_menupage, 0) <= 4) // intro range
+				if(EMU_ReadInt(GE_menupage) >= -1 && EMU_ReadInt(GE_menupage) <= 4) // intro range
 					presence.details = "Intro";
-				else if(EMU_ReadInt(GE_menupage, 0) == 24) // character credits
+				else if(EMU_ReadInt(GE_menupage) == 24) // character credits
 					presence.details = "Credits";
 				else // in menu
 					presence.details = "In Main Menu";
@@ -114,35 +114,35 @@ void DRP_Update(void)
 		else if(EMU_ReadROM(ROMCRC1) == PDCRC1 && EMU_ReadROM(ROMCRC2) == PDCRC2) // check if official PD rom
 		{
 			presence.largeImageKey = "pd"; // large default icon (not in-game)
-			if(EMU_ReadInt(PD_stageid, 0) >= 0x09 && EMU_ReadInt(PD_stageid, 0) < 0x51) // if stage id is within char array
+			if(EMU_ReadInt(PD_stageid) >= 0x09 && EMU_ReadInt(PD_stageid) < 0x51) // if stage id is within char array
 			{
 				presence.smallImageKey = "pdingame"; // set small icon
-				presence.details = pdstagenames[EMU_ReadInt(PD_stageid, 0)]; // set details to map name
-				if(EMU_ReadInt(PD_stageid, 0) != 0x26) // if level isn't carrington institute
+				presence.details = pdstagenames[EMU_ReadInt(PD_stageid)]; // set details to map name
+				if(EMU_ReadInt(PD_stageid) != 0x26) // if level isn't carrington institute
 				{
 					int mpflag = 0;
 					for(int index = 0; index < 0x10; index++) // compare current stage id to list of mp stage ids
-						if(pdmpstageids[index] == EMU_ReadInt(PD_stageid, 0))
+						if(pdmpstageids[index] == EMU_ReadInt(PD_stageid))
 							mpflag = 1;
-					presence.state = !mpflag ? pddifficulty[ClampInt(EMU_ReadInt(PD_difficulty, 0), 0, 2)] : "Combat Simulator"; // set difficulty/combat simulator to state
-					if(EMU_ReadInt(PD_camera, 0) == 1 || EMU_ReadInt(PD_camera, 0) == 7) // if in gameplay mode (not cutscene), calculate time
+					presence.state = !mpflag ? pddifficulty[ClampInt(EMU_ReadInt(PD_difficulty), 0, 2)] : "Combat Simulator"; // set difficulty/combat simulator to state
+					if(EMU_ReadInt(PD_camera) == 1 || EMU_ReadInt(PD_camera) == 7) // if in gameplay mode (not cutscene), calculate time
 					{
 						time_t currenttime = time(NULL); // get current time from OS
 						int gametime;
 						if(!mpflag)
-							gametime = EMU_ReadInt(EMU_ReadInt(PD_joannadata, 0), PD_sptime) / 60; // convert in-game SP time (60 Hz) to seconds (SP time is part of player struct)
+							gametime = EMU_ReadInt(EMU_ReadInt(PD_joannadata) + PD_sptime) / 60; // convert in-game SP time (60 Hz) to seconds (SP time is part of player struct)
 						else
-							gametime = EMU_ReadInt(PD_mptime, 0) / 60; // convert in-game MP time (60 Hz) to seconds
+							gametime = EMU_ReadInt(PD_mptime) / 60; // convert in-game MP time (60 Hz) to seconds
 						presence.startTimestamp = currenttime - gametime; // subtract from current time to get starting time for current map
 					}
 				}
 				char thumbnailid[0x5];
-				sprintf(thumbnailid, "pd%1.2x", EMU_ReadInt(PD_stageid, 0)); // set thumbnail id
+				sprintf(thumbnailid, "pd%1.2x", EMU_ReadInt(PD_stageid)); // set thumbnail id
 				presence.largeImageKey = thumbnailid;
 			}
-			else if(EMU_ReadInt(PD_stageid, 0) == -1)
+			else if(EMU_ReadInt(PD_stageid) == -1)
 				presence.details = "Intro";
-			else if(EMU_ReadInt(PD_stageid, 0) == 0x5C) // if credits
+			else if(EMU_ReadInt(PD_stageid) == 0x5C) // if credits
 				presence.state = "Credits";
 		}
 		else // user is running a rom hack

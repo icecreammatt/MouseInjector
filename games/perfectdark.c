@@ -56,7 +56,7 @@
 #define PD_bikeroll 0x8052D69C - 0x8052D64C
 #define PD_bikespeed 0x8052D694 - 0x8052D64C
 // STATIC ADDRESSES BELOW
-#define JOANNADATA(X) (unsigned int)EMU_ReadInt(0x8009A024, X * 0x4) // player pointer address (0x4 offset for each players)
+#define JOANNADATA(X) (unsigned int)EMU_ReadInt(0x8009A024 + X * 0x4) // player pointer address (0x4 offset for each players)
 #define PD_menu(X) 0x80070750 + X * 0x4 // player menu flag (0 = PD is in menu) (0x4 offset for each players)
 #define PD_camera 0x8009A26C // camera flag (1 = gameplay, 2 & 3 = ???, 4 = multiplayer sweep, 5 = gameover screen, 6 = cutscene mode, 7 = force player to move: extraction's dark room)
 #define PD_pause 0x80084014 // menu flag (1 = PD is paused)
@@ -106,7 +106,7 @@ const GAMEDRIVER *GAME_PERFECTDARK = &GAMEDRIVER_INTERFACE;
 //==========================================================================
 static int PD_Status(void)
 {
-	const int pd_menu = EMU_ReadInt(PD_menu(0), 0), pd_camera = EMU_ReadInt(PD_camera, 0), pd_pause = EMU_ReadInt(PD_pause, 0), pd_romcheck = EMU_ReadInt(PD_menuitem, 0);
+	const int pd_menu = EMU_ReadInt(PD_menu(PLAYER1)), pd_camera = EMU_ReadInt(PD_camera), pd_pause = EMU_ReadInt(PD_pause), pd_romcheck = EMU_ReadInt(PD_menuitem);
 	if(pd_menu >= 0 && pd_menu <= 1 && pd_camera >= 0 && pd_camera <= 7 && pd_pause >= 0 && pd_pause <= 1 && pd_romcheck == 0x04010000)
 		return 1;
 	return 0;
@@ -119,13 +119,13 @@ static void PD_DetectMap(void)
 {
 	for(int player = PLAYER1; player < ALLPLAYERS; player++)
 	{
-		if(playerbase[player] != JOANNADATA(player) && (EMU_ReadInt(PD_camera, 0) == 1 || EMU_ReadInt(PD_camera, 0) == 3 || EMU_ReadInt(PD_camera, 0) == 4 || EMU_ReadInt(PD_camera, 0) == 6))
+		if(playerbase[player] != JOANNADATA(player) && (EMU_ReadInt(PD_camera) == 1 || EMU_ReadInt(PD_camera) == 3 || EMU_ReadInt(PD_camera) == 4 || EMU_ReadInt(PD_camera) == 6))
 		{
 			playerbase[player] = JOANNADATA(player);
 			PD_ResetCrouchToggle(player); // reset crouch toggle on new map
 			xmenu[player] = 0, ymenu[player] = 0; // reset menu direction
 		}
-		if(EMU_ReadInt(playerbase[player], PD_grabflag) == 3 && bikebase[player][1] != 3) // player has just now hopped on a bike, search for bike pointer
+		if(EMU_ReadInt(playerbase[player] + PD_grabflag) == 3 && bikebase[player][1] != 3) // player has just now hopped on a bike, search for bike pointer
 		{
 			DEV_Sleep(20); // wait before we search for the bike pointer
 			const unsigned int bikepointers[15] = {0x8052D5DC, 0x8054B1E8, 0x80552D8C, 0x8052A4FC, 0x8054ECDC, 0x80556DF4, 0x80501438, 0x8050EED4, 0x805142A4, 0x804CA4D4, 0x804D10D4, 0x803FF4F0, 0x803FF6A4, 0x803FF7A4, 0x803FF7BC}; // common bike pointers
@@ -133,11 +133,11 @@ static void PD_DetectMap(void)
 			{
 				for(int j = 0; j < 15; j++)
 				{
-					unsigned int bikeptr = EMU_ReadInt(bikepointers[j], 0) + 0x6C;
-					if(EMU_ReadFloat(bikeptr, 0) <= BIKEXROTATIONLIMIT && EMU_ReadFloat(bikeptr, 0) >= 0 && EMU_ReadFloat(bikeptr, PD_bikeroll) <= BIKEROLLLIMIT && EMU_ReadFloat(bikeptr, PD_bikeroll) >= -BIKEROLLLIMIT && EMU_ReadFloat(bikeptr, PD_bikespeed) <= BIKESPEEDLIMIT && EMU_ReadFloat(bikeptr, PD_bikespeed) >= -BIKESPEEDLIMIT) // if bike base is valid
+					unsigned int bikeptr = EMU_ReadInt(bikepointers[j]) + 0x6C;
+					if(EMU_ReadFloat(bikeptr) <= BIKEXROTATIONLIMIT && EMU_ReadFloat(bikeptr) >= 0 && EMU_ReadFloat(bikeptr + PD_bikeroll) <= BIKEROLLLIMIT && EMU_ReadFloat(bikeptr + PD_bikeroll) >= -BIKEROLLLIMIT && EMU_ReadFloat(bikeptr + PD_bikespeed) <= BIKESPEEDLIMIT && EMU_ReadFloat(bikeptr + PD_bikespeed) >= -BIKESPEEDLIMIT) // if bike base is valid
 					{
-						const float camx = -(EMU_ReadFloat(playerbase[player], PD_camx)) / (360 / BIKEXROTATIONLIMIT) + BIKEXROTATIONLIMIT; // player's rotation converted to bike rotation range
-						if(roundf(EMU_ReadFloat(bikeptr, 0) * 100) / 100 != roundf(camx * 100) / 100) // bike rotation does not match player's rotation, keep searching
+						const float camx = -(EMU_ReadFloat(playerbase[player] + PD_camx)) / (360 / BIKEXROTATIONLIMIT) + BIKEXROTATIONLIMIT; // player's rotation converted to bike rotation range
+						if(roundf(EMU_ReadFloat(bikeptr) * 100) / 100 != roundf(camx * 100) / 100) // bike rotation does not match player's rotation, keep searching
 							continue;
 						bikebase[player][0] = bikeptr; // success, we found it
 						break;
@@ -151,7 +151,7 @@ static void PD_DetectMap(void)
 		}
 		else if(bikebase[player][1] != 3)
 			bikebase[player][0] = 0;
-		bikebase[player][1] = EMU_ReadInt(playerbase[player], PD_grabflag); // remember player's last grab state (used to find the exact moment when the player hops on a bike)
+		bikebase[player][1] = EMU_ReadInt(playerbase[player] + PD_grabflag); // remember player's last grab state (used to find the exact moment when the player hops on a bike)
 	}
 }
 //==========================================================================
@@ -167,21 +167,21 @@ static void PD_Inject(void)
 	{
 		if(PROFILE[player].SETTINGS[CONFIG] == DISABLED) // bypass disabled players
 			continue;
-		const int camera = EMU_ReadInt(PD_camera, 0);
-		const int dead = EMU_ReadInt(playerbase[player], PD_deathflag);
-		const int menu = EMU_ReadInt(PD_menu(player), 0);
-		const int pause = EMU_ReadInt(PD_pause, 0);
-		const int mppause = EMU_ReadInt(PD_mppause, 0);
-		const int aimingflag = EMU_ReadInt(playerbase[player], PD_aimingflag);
-		const int grabflag = EMU_ReadInt(playerbase[player], PD_grabflag);
-		const int thirdperson = EMU_ReadInt(playerbase[player], PD_thirdperson);
+		const int camera = EMU_ReadInt(PD_camera);
+		const int dead = EMU_ReadInt(playerbase[player] + PD_deathflag);
+		const int menu = EMU_ReadInt(PD_menu(player));
+		const int pause = EMU_ReadInt(PD_pause);
+		const int mppause = EMU_ReadInt(PD_mppause);
+		const int aimingflag = EMU_ReadInt(playerbase[player] + PD_aimingflag);
+		const int grabflag = EMU_ReadInt(playerbase[player] + PD_grabflag);
+		const int thirdperson = EMU_ReadInt(playerbase[player] + PD_thirdperson);
 		const int cursoraimingflag = PROFILE[player].SETTINGS[PDAIMMODE] && aimingflag ? 1 : 0;
-		const float fov = EMU_ReadFloat(playerbase[player], PD_fov);
+		const float fov = EMU_ReadFloat(playerbase[player] + PD_fov);
 		const float basefov = fov >= 60.0f ? (float)overridefov : 60.0f;
 		const float mouseaccel = PROFILE[player].SETTINGS[ACCELERATION] ? sqrt(DEVICE[player].XPOS * DEVICE[player].XPOS + DEVICE[player].YPOS * DEVICE[player].YPOS) / TICKRATE / 12.0f * PROFILE[player].SETTINGS[ACCELERATION] : 0;
 		const float sensitivity = PROFILE[player].SETTINGS[SENSITIVITY] / 40.0f * fmax(mouseaccel, 1);
 		const float gunsensitivity = sensitivity * (PROFILE[player].SETTINGS[CROSSHAIR] / 2.5f);
-		float camx = EMU_ReadFloat(playerbase[player], PD_camx), camy = EMU_ReadFloat(playerbase[player], PD_camy), bikex = EMU_ReadFloat(bikebase[player][0], 0), bikeroll = EMU_ReadFloat(bikebase[player][0], PD_bikeroll);
+		float camx = EMU_ReadFloat(playerbase[player] + PD_camx), camy = EMU_ReadFloat(playerbase[player] + PD_camy), bikex = EMU_ReadFloat(bikebase[player][0]), bikeroll = EMU_ReadFloat(bikebase[player][0] + PD_bikeroll);
 		if(camx >= 0 && camx <= 360 && camy >= -90 && camy <= 90 && fov >= 1 && fov <= 120 && dead == 0 && menu == 1 && pause == 0 && mppause < 16777476 && camera == 1 && (grabflag == 0 || grabflag == 4 || grabflag == 3 && bikebase[player][0] && bikex <= BIKEXROTATIONLIMIT && bikex >= 0 && bikeroll <= BIKEROLLLIMIT && bikeroll >= -BIKEROLLLIMIT)) // if safe to inject
 		{
 			if(thirdperson == 1 || thirdperson == 2) // if player is using the slayer/camspy, translate mouse input to analog stick and continue to next player
@@ -201,7 +201,7 @@ static void PD_Inject(void)
 					camx += 360;
 				else if(camx >= 360)
 					camx -= 360;
-				EMU_WriteFloat(playerbase[player], PD_camx, camx);
+				EMU_WriteFloat(playerbase[player] + PD_camx, camx);
 			}
 			else // if player is riding hoverbike (and hoverbike address is valid)
 			{
@@ -221,43 +221,43 @@ static void PD_Inject(void)
 				else if(bikex >= BIKEXROTATIONLIMIT)
 					bikex -= BIKEXROTATIONLIMIT;
 				bikeroll = ClampFloat(bikeroll, -BIKEROLLLIMIT, BIKEROLLLIMIT);
-				EMU_WriteFloat(bikebase[player][0], 0, bikex);
-				EMU_WriteFloat(bikebase[player][0], PD_bikeroll, bikeroll);
+				EMU_WriteFloat(bikebase[player][0], bikex);
+				EMU_WriteFloat(bikebase[player][0] + PD_bikeroll, bikeroll);
 			}
 			if(!cursoraimingflag)
 				camy += (!PROFILE[player].SETTINGS[INVERTPITCH] ? -DEVICE[player].YPOS : DEVICE[player].YPOS) / 10.0f * sensitivity * (fov / basefov);
 			else
 				camy += -aimy[player] * (fov / basefov);
 			camy = ClampFloat(camy, -90, 90);
-			EMU_WriteFloat(playerbase[player], PD_camy, camy);
+			EMU_WriteFloat(playerbase[player] + PD_camy, camy);
 			if(PROFILE[player].SETTINGS[CROSSHAIR] && !cursoraimingflag) // if crosshair movement is enabled and player isn't aiming (don't calculate weapon movement while the player is in aim mode)
 			{
-				float gunx = EMU_ReadFloat(playerbase[player], PD_gunrx), crosshairx = EMU_ReadFloat(playerbase[player], PD_crosshairx); // after camera x and y have been calculated and injected, calculate the gun/reload/crosshair movement
+				float gunx = EMU_ReadFloat(playerbase[player] + PD_gunrx), crosshairx = EMU_ReadFloat(playerbase[player] + PD_crosshairx); // after camera x and y have been calculated and injected, calculate the gun/reload/crosshair movement
 				gunx += DEVICE[player].XPOS / (!aimingflag ? 10.0f : 40.0f) * gunsensitivity * (fov / basefov) * 0.05f;
 				crosshairx += DEVICE[player].XPOS / (!aimingflag ? 10.0f : 40.0f) * gunsensitivity * (fov / 4 / (basefov / 4)) * 0.05f;
 				if(aimingflag) // emulate cursor moving back to the center
 					gunx /= emuoverclock ? 1.03f : 1.07f, crosshairx /= emuoverclock ? 1.03f : 1.07f;
 				gunx = ClampFloat(gunx, -GUNAIMLIMIT, GUNAIMLIMIT);
 				crosshairx = ClampFloat(crosshairx, -CROSSHAIRLIMIT, CROSSHAIRLIMIT);
-				EMU_WriteFloat(playerbase[player], PD_gunrx, gunx);
-				EMU_WriteFloat(playerbase[player], PD_gunrxrecoil, crosshairx * (GUNRECOILXLIMIT / CROSSHAIRLIMIT));
-				EMU_WriteFloat(playerbase[player], PD_gunlx, gunx);
-				EMU_WriteFloat(playerbase[player], PD_gunlxrecoil, crosshairx * (GUNRECOILXLIMIT / CROSSHAIRLIMIT));
-				EMU_WriteFloat(playerbase[player], PD_crosshairx, crosshairx);
+				EMU_WriteFloat(playerbase[player] + PD_gunrx, gunx);
+				EMU_WriteFloat(playerbase[player] + PD_gunrxrecoil, crosshairx * (GUNRECOILXLIMIT / CROSSHAIRLIMIT));
+				EMU_WriteFloat(playerbase[player] + PD_gunlx, gunx);
+				EMU_WriteFloat(playerbase[player] + PD_gunlxrecoil, crosshairx * (GUNRECOILXLIMIT / CROSSHAIRLIMIT));
+				EMU_WriteFloat(playerbase[player] + PD_crosshairx, crosshairx);
 				if(camy > -90 && camy < 90) // only allow player's gun to pitch within a valid range
 				{
-					float guny = EMU_ReadFloat(playerbase[player], PD_gunry), crosshairy = EMU_ReadFloat(playerbase[player], PD_crosshairy);
+					float guny = EMU_ReadFloat(playerbase[player] + PD_gunry), crosshairy = EMU_ReadFloat(playerbase[player] + PD_crosshairy);
 					guny += (!PROFILE[player].SETTINGS[INVERTPITCH] ? DEVICE[player].YPOS : -DEVICE[player].YPOS) / (!aimingflag ? 10.0f : 40.0f) * gunsensitivity * (fov / basefov) * 0.075f;
 					crosshairy += (!PROFILE[player].SETTINGS[INVERTPITCH] ? DEVICE[player].YPOS : -DEVICE[player].YPOS) / (!aimingflag ? 10.0f : 40.0f) * gunsensitivity * (fov / 4 / (basefov / 4)) * 0.1f;
 					if(aimingflag)
 						guny /= emuoverclock ? 1.15f : 1.35f, crosshairy /= emuoverclock ? 1.15f : 1.35f;
 					guny = ClampFloat(guny, -GUNAIMLIMIT, GUNAIMLIMIT);
 					crosshairy = ClampFloat(crosshairy, -CROSSHAIRLIMIT, CROSSHAIRLIMIT);
-					EMU_WriteFloat(playerbase[player], PD_gunry, guny);
-					EMU_WriteFloat(playerbase[player], PD_gunryrecoil, crosshairy * (GUNRECOILYLIMIT / CROSSHAIRLIMIT));
-					EMU_WriteFloat(playerbase[player], PD_gunly, guny);
-					EMU_WriteFloat(playerbase[player], PD_gunlyrecoil, crosshairy * (GUNRECOILYLIMIT / CROSSHAIRLIMIT));
-					EMU_WriteFloat(playerbase[player], PD_crosshairy, crosshairy);
+					EMU_WriteFloat(playerbase[player] + PD_gunry, guny);
+					EMU_WriteFloat(playerbase[player] + PD_gunryrecoil, crosshairy * (GUNRECOILYLIMIT / CROSSHAIRLIMIT));
+					EMU_WriteFloat(playerbase[player] + PD_gunly, guny);
+					EMU_WriteFloat(playerbase[player] + PD_gunlyrecoil, crosshairy * (GUNRECOILYLIMIT / CROSSHAIRLIMIT));
+					EMU_WriteFloat(playerbase[player] + PD_crosshairy, crosshairy);
 				}
 			}
 		}
@@ -288,9 +288,9 @@ static void PD_Crouch(const int player)
 		crouchheld = crouchstance[player];
 	}
 	if(crouchheld) // user is holding down the crouch button
-		EMU_WriteInt(playerbase[player], PD_crouchflag, 0); // set in-game crouch flag to lowest point
+		EMU_WriteInt(playerbase[player] + PD_crouchflag, 0); // set in-game crouch flag to lowest point
 	else // player isn't holding down crouch
-		EMU_WriteInt(playerbase[player], PD_crouchflag, 2); // force standing flag value (the side effect to this brute force method is it causes a speed glitch while crawling in tunnels)
+		EMU_WriteInt(playerbase[player] + PD_crouchflag, 2); // force standing flag value (the side effect to this brute force method is it causes a speed glitch while crawling in tunnels)
 }
 //==========================================================================
 // Purpose: replicate the original aiming system, uses aimx/y to move screen when crosshair is on border of screen
@@ -298,8 +298,8 @@ static void PD_Crouch(const int player)
 //==========================================================================
 static void PD_AimMode(const int player, const int aimingflag, const float fov)
 {
-	const float crosshairx = EMU_ReadFloat(playerbase[player], PD_crosshairx), crosshairy = EMU_ReadFloat(playerbase[player], PD_crosshairy);
-	const int gunrreload = EMU_ReadInt(playerbase[player], PD_gunrstate) == 1, gunlreload = EMU_ReadInt(playerbase[player], PD_gunlstate) == 1, unarmed = EMU_ReadInt(playerbase[player], PD_currentweapon) < 2;
+	const float crosshairx = EMU_ReadFloat(playerbase[player] + PD_crosshairx), crosshairy = EMU_ReadFloat(playerbase[player] + PD_crosshairy);
+	const int gunrreload = EMU_ReadInt(playerbase[player] + PD_gunrstate) == 1, gunlreload = EMU_ReadInt(playerbase[player] + PD_gunlstate) == 1, unarmed = EMU_ReadInt(playerbase[player] + PD_currentweapon) < 2;
 	const float threshold = 0.72f, speed = 475.f, sensitivity = 100.f, centertime = 60.f;
 	if(aimingflag) // if player is aiming
 	{
@@ -308,8 +308,8 @@ static void PD_AimMode(const int player, const int aimingflag, const float fov)
 		crosshairposy[player] += (!PROFILE[player].SETTINGS[INVERTPITCH] ? DEVICE[player].YPOS : -DEVICE[player].YPOS) / 10.0f * (PROFILE[player].SETTINGS[SENSITIVITY] / sensitivity) * fmax(mouseaccel, 1);
 		crosshairposx[player] = ClampFloat(crosshairposx[player], -CROSSHAIRLIMIT, CROSSHAIRLIMIT); // apply clamp then inject
 		crosshairposy[player] = ClampFloat(crosshairposy[player], -CROSSHAIRLIMIT, CROSSHAIRLIMIT);
-		EMU_WriteFloat(playerbase[player], PD_crosshairx, crosshairposx[player]);
-		EMU_WriteFloat(playerbase[player], PD_crosshairy, crosshairposy[player]);
+		EMU_WriteFloat(playerbase[player] + PD_crosshairx, crosshairposx[player]);
+		EMU_WriteFloat(playerbase[player] + PD_crosshairy, crosshairposy[player]);
 		if(unarmed || gunrreload) // if unarmed or reloading right weapon, remove from gunrcenter
 			gunrcenter[player] -= emuoverclock ? 1 : 2;
 		else if(gunrcenter[player] < (int)centertime) // increase gunrcenter over time until it equals centertime
@@ -322,14 +322,14 @@ static void PD_AimMode(const int player, const int aimingflag, const float fov)
 			gunrcenter[player] = 0;
 		if(gunlcenter[player] < 0)
 			gunlcenter[player] = 0;
-		EMU_WriteFloat(playerbase[player], PD_gunrx, (gunrcenter[player] / centertime) * (crosshairposx[player] * 0.75f) + fov - 1); // calculate and inject the gun angles
-		EMU_WriteFloat(playerbase[player], PD_gunrxrecoil, crosshairposx[player] * (GUNRECOILXLIMIT / CROSSHAIRLIMIT)); // set the recoil to the correct rotation (if we don't, then the recoil is always z axis aligned)
-		EMU_WriteFloat(playerbase[player], PD_gunry, (gunrcenter[player] / centertime) * (crosshairposy[player] * 0.66f) + fov - 1);
-		EMU_WriteFloat(playerbase[player], PD_gunryrecoil, crosshairposy[player] * (GUNRECOILYLIMIT / CROSSHAIRLIMIT));
-		EMU_WriteFloat(playerbase[player], PD_gunlx, (gunlcenter[player] / centertime) * (crosshairposx[player] * 0.75f) + fov - 1);
-		EMU_WriteFloat(playerbase[player], PD_gunlxrecoil, crosshairposx[player] * (GUNRECOILXLIMIT / CROSSHAIRLIMIT));
-		EMU_WriteFloat(playerbase[player], PD_gunly, (gunlcenter[player] / centertime) * (crosshairposy[player] * 0.66f) + fov - 1);
-		EMU_WriteFloat(playerbase[player], PD_gunlyrecoil, crosshairposy[player] * (GUNRECOILYLIMIT / CROSSHAIRLIMIT));
+		EMU_WriteFloat(playerbase[player] + PD_gunrx, (gunrcenter[player] / centertime) * (crosshairposx[player] * 0.75f) + fov - 1); // calculate and inject the gun angles
+		EMU_WriteFloat(playerbase[player] + PD_gunrxrecoil, crosshairposx[player] * (GUNRECOILXLIMIT / CROSSHAIRLIMIT)); // set the recoil to the correct rotation (if we don't, then the recoil is always z axis aligned)
+		EMU_WriteFloat(playerbase[player] + PD_gunry, (gunrcenter[player] / centertime) * (crosshairposy[player] * 0.66f) + fov - 1);
+		EMU_WriteFloat(playerbase[player] + PD_gunryrecoil, crosshairposy[player] * (GUNRECOILYLIMIT / CROSSHAIRLIMIT));
+		EMU_WriteFloat(playerbase[player] + PD_gunlx, (gunlcenter[player] / centertime) * (crosshairposx[player] * 0.75f) + fov - 1);
+		EMU_WriteFloat(playerbase[player] + PD_gunlxrecoil, crosshairposx[player] * (GUNRECOILXLIMIT / CROSSHAIRLIMIT));
+		EMU_WriteFloat(playerbase[player] + PD_gunly, (gunlcenter[player] / centertime) * (crosshairposy[player] * 0.66f) + fov - 1);
+		EMU_WriteFloat(playerbase[player] + PD_gunlyrecoil, crosshairposy[player] * (GUNRECOILYLIMIT / CROSSHAIRLIMIT));
 		if(crosshairx > 0 && crosshairx / CROSSHAIRLIMIT > threshold) // if crosshair is within threshold of the border then calculate a linear scrolling speed and enable mouselook
 			aimx[player] = (crosshairx / CROSSHAIRLIMIT - threshold) * speed * TIMESTEP;
 		else if(crosshairx < 0 && crosshairx / CROSSHAIRLIMIT < -threshold)
@@ -449,16 +449,16 @@ static void PD_InjectHacks(void)
 {
 	const int addressarray[33] = {0x802C07B8, 0x802C07BC, 0x802C07EC, 0x802C07F0, 0x802C07FC, 0x802C0800, 0x802C0808, 0x802C0820, 0x802C0824, 0x802C082C, 0x802C0830, 0x803C7968, 0x803C796C, 0x803C7970, 0x803C7974, 0x803C7978, 0x803C797C, 0x803C7980, 0x803C7984, 0x803C7988, 0x803C798C, 0x803C7990, 0x803C7994, 0x803C7998, 0x803C799C, 0x803C79A0, 0x803C79A4, 0x803C79A8, 0x803C79AC, 0x803C79B0, 0x803C79B4, 0x803C79B8, 0x803C79BC}, codearray[33] = {0x0BC69E5A, 0x8EA10120, 0x0BC69E5F, 0x263107A4, 0x0BC69E63, 0x4614C500, 0x46120682, 0x0BC69E67, 0x26100004, 0x0BC69E6B, 0x4614C500, 0x54200003, 0x00000000, 0xE6B21668, 0xE6A8166C, 0x0BC281F0, 0x8EA10120, 0x50200001, 0xE6380530, 0x0BC281FD, 0x8EA10120, 0x50200001, 0xE6340534, 0x0BC28201, 0x8EA10120, 0x50200001, 0xE6380530, 0x0BC2820A, 0x8EA10120, 0x50200001, 0xE6340534, 0x0BC2820D, 0x00000000}; // add branch to crosshair code so cursor aiming mode is absolute (without jitter)
 	for(int index = 0; index < 33; index++) // inject code array
-		EMU_WriteInt(addressarray[index], 0, codearray[index]);
+		EMU_WriteInt(addressarray[index], codearray[index]);
 	if(overridefov != 60) // override default fov
 	{
 		float newfov = overridefov;
 		unsigned int unsignedinteger = *(unsigned int *)(float *)(&newfov);
-		EMU_WriteInt(PD_defaultfov, 0, 0x3C010000 + (short)(unsignedinteger / 0x10000));
-		EMU_WriteInt(PD_defaultfovzoom, 0, 0x3C010000 + (short)(unsignedinteger / 0x10000));
+		EMU_WriteInt(PD_defaultfov, 0x3C010000 + (short)(unsignedinteger / 0x10000));
+		EMU_WriteInt(PD_defaultfovzoom, 0x3C010000 + (short)(unsignedinteger / 0x10000));
 	}
 	if(CONTROLLER[PLAYER1].Z_TRIG && CONTROLLER[PLAYER1].R_TRIG) // skip intros if holding down fire + aim
-		EMU_WriteInt(PD_introcounter, 0, 0x00001000);
+		EMU_WriteInt(PD_introcounter, 0x00001000);
 }
 //==========================================================================
 // Purpose: run when emulator closes rom
