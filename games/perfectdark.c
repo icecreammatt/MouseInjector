@@ -17,9 +17,9 @@
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, visit http://www.gnu.org/licenses/gpl-2.0.html
 //==========================================================================
+#include <windows.h>
 #include <math.h>
 #include "../global.h"
-#include "../device.h"
 #include "../maindll.h"
 #include "game.h"
 #include "memory.h"
@@ -127,7 +127,7 @@ static void PD_DetectMap(void)
 		}
 		if(EMU_ReadInt(playerbase[player] + PD_grabflag) == 3 && bikebase[player][1] != 3) // player has just now hopped on a bike, search for bike pointer
 		{
-			DEV_Sleep(20); // wait before we search for the bike pointer
+			Sleep(20); // wait before we search for the bike pointer
 			const unsigned int bikepointers[15] = {0x8052D5DC, 0x8054B1E8, 0x80552D8C, 0x8052A4FC, 0x8054ECDC, 0x80556DF4, 0x80501438, 0x8050EED4, 0x805142A4, 0x804CA4D4, 0x804D10D4, 0x803FF4F0, 0x803FF6A4, 0x803FF7A4, 0x803FF7BC}; // common bike pointers
 			for(int i = 0; i < 32; i++)
 			{
@@ -146,7 +146,7 @@ static void PD_DetectMap(void)
 				if(bikebase[player][0]) // bike base found, leave the while loop
 					break;
 				else
-					DEV_Sleep(16); // wait one frame before we search again for the bike pointer
+					Sleep(16); // wait one frame before we search again for the bike pointer
 			}
 		}
 		else if(bikebase[player][1] != 3)

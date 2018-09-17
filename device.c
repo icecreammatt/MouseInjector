@@ -50,7 +50,6 @@ const char *DEV_Name(const int id);
 int DEV_Type(const int id);
 int DEV_TypeIndex(const int id);
 int DEV_TypeID(const int id, const int kbflag);
-void DEV_Sleep(const unsigned int millisec);
 
 //==========================================================================
 // Purpose: First called upon device launch
@@ -86,13 +85,15 @@ void DEV_Quit(void)
 // Purpose: Polls ManyMouse for input and injects into game
 // Changes Globals: a lot
 //==========================================================================
-void *DEV_InjectThread()
+DWORD WINAPI DEV_InjectThread()
 {
 	ManyMouseEvent event; // hold current input event (movement, buttons, ect)
 	memset(&DEVICE, 0, sizeof(DEVICE)); // clear device struct
 	int checkwindowtick = 0; // check if emulator window is in focus
 	int togglebuffer = 0; // buffer cool down for mouse toggle
 	int ignoredevices = 0; // ignore device filtering flag (used if only 1 player is active)
+	while(ManyMouse_PollEvent(&event)); // flush input before starting
+		Sleep(1);
 	while(!stopthread)
 	{
 		if(mousetoggle)
@@ -211,9 +212,9 @@ void *DEV_InjectThread()
 			checkwindowtick++;
 		if(windowactive && GAME_Status()) // if emulator is focused and game is valid
 			GAME_Inject(); // inject game
-		DEV_Sleep(emuoverclock ? 2 : 4); // 2ms (500 Hz) for overclocked, 4ms (250 Hz) for stock speed
+		Sleep(emuoverclock ? 2 : 4); // 2ms (500 Hz) for overclocked, 4ms (250 Hz) for stock speed
 	}
-	return NULL;
+	return 0;
 }
 //==========================================================================
 // Purpose: Returns a single key
@@ -308,11 +309,4 @@ int DEV_TypeID(const int id, const int kbflag)
 			return index;
 	}
 	return 0;
-}
-//==========================================================================
-// Purpose: Pauses whatever for x amount of milliseconds
-//==========================================================================
-void DEV_Sleep(const unsigned int millisec)
-{
-	Sleep(millisec);
 }

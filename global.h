@@ -25,14 +25,17 @@ PROFILE[PLAYER1].SETTINGS[CONFIG] != DISABLED && PROFILE[PLAYER2].SETTINGS[CONFI
 PROFILE[PLAYER1].SETTINGS[CONFIG] == DISABLED && PROFILE[PLAYER2].SETTINGS[CONFIG] != DISABLED && PROFILE[PLAYER3].SETTINGS[CONFIG] == DISABLED && PROFILE[PLAYER4].SETTINGS[CONFIG] == DISABLED || \
 PROFILE[PLAYER1].SETTINGS[CONFIG] == DISABLED && PROFILE[PLAYER2].SETTINGS[CONFIG] == DISABLED && PROFILE[PLAYER3].SETTINGS[CONFIG] != DISABLED && PROFILE[PLAYER4].SETTINGS[CONFIG] == DISABLED || \
 PROFILE[PLAYER1].SETTINGS[CONFIG] == DISABLED && PROFILE[PLAYER2].SETTINGS[CONFIG] == DISABLED && PROFILE[PLAYER3].SETTINGS[CONFIG] == DISABLED && PROFILE[PLAYER4].SETTINGS[CONFIG] != DISABLED
+#if _MSC_VER && !__INTEL_COMPILER // here because some MSVC versions only support __inline :/
+#define inline __inline
+#endif
 
-static inline float ClampFloat(const float value, const float min, const float max)
+inline float ClampFloat(const float value, const float min, const float max)
 {
 	const float test = value < min ? min : value;
 	return test > max ? max : test;
 }
 
-static inline int ClampInt(const int value, const int min, const int max)
+inline int ClampInt(const int value, const int min, const int max)
 {
 	const int test = value < min ? min : value;
 	return test > max ? max : test;
