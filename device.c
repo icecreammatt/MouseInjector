@@ -92,6 +92,8 @@ DWORD WINAPI DEV_InjectThread()
 	int checkwindowtick = 0; // check if emulator window is in focus
 	int togglebuffer = 0; // buffer cool down for mouse toggle
 	int ignoredevices = 0; // ignore device filtering flag (used if only 1 player is active)
+	while(ManyMouse_PollEvent(&event)); // flush input before starting
+		Sleep(1);
 	while(!stopthread)
 	{
 		if(mousetoggle)
