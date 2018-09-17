@@ -19,7 +19,6 @@
 //==========================================================================
 #include <stdio.h>
 #include <math.h>
-#include <pthread.h>
 #include <windows.h>
 #include <commctrl.h>
 #include "global.h"
@@ -34,13 +33,14 @@
 #define CALL __cdecl
 
 static HINSTANCE hInst = NULL;
-static pthread_t injectthread = 0; // thread identifier
+static HANDLE injectthread = 0; // thread identifier
 static wchar_t inifilepath[MAX_PATH]; // mouseinjector.ini filepath
 static const char inifilepathdefault[MAX_PATH] = ".\\plugin\\mouseinjector.ini"; // mouseinjector.ini filepath (safe default char type)
 static int lastinputbutton = 0; // used to check and see if user pressed button twice in a row (avoid loop for spacebar/enter/click)
 static int currentplayer = PLAYER1;
 static int defaultmouse = -1, defaultkeyboard = -1;
 static CONTROL *ctrlptr = NULL;
+static int currentlyconfiguring = 0;
 static int changeratio = 0; // used to display different hoz fov for 4:3/16:9 ratio
 
 const unsigned char **rdramptr = 0; // pointer to emulator's rdram table
@@ -50,7 +50,6 @@ int mousetogglekey = 0x34; // default key is 4
 int mousetoggle = 0; // mouse lock
 int mouselockonfocus = 0; // lock mouse when 1964 is focused
 int mouseunlockonloss = 1; // unlock mouse when 1964 is unfocused
-int currentlyconfiguring = 0;
 HWND emulatorwindow = NULL;
 int emuoverclock = 1; // is this emu overclocked?
 int overridefov = 60; // fov override
@@ -169,7 +168,7 @@ static void StartInjection(void)
 	if(stopthread) // check if thread isn't running already
 	{
 		stopthread = 0;
-		pthread_create(&injectthread, NULL, DEV_InjectThread, NULL); // start thread
+		injectthread = CreateThread(NULL, 0, DEV_InjectThread, NULL, 0, NULL); // start thread, return thread identifier
 	}
 }
 //==========================================================================
@@ -181,7 +180,7 @@ static void StopInjection(void)
 	if(!stopthread) // check if thread is running
 	{
 		stopthread = 1;
-		pthread_join(injectthread, NULL); // wait for thread to close
+		CloseHandle(injectthread);
 	}
 }
 //==========================================================================
@@ -495,7 +494,7 @@ static void GUI_ProcessKey(const HWND hW, const int buttonid, const int primflag
 	int key = 0, tick = 0;
 	while(!key) // search for first key press
 	{
-		DEV_Sleep(40); // don't repeat this loop too quickly
+		Sleep(40); // don't repeat this loop too quickly
 		tick++;
 		if(tick > 3) // wait 3 ticks before accepting input
 			key = DEV_ReturnKey();
@@ -550,7 +549,7 @@ static void GUI_DetectDevice(const HWND hW, const int buttonid)
 	int kb = -1, ms = -1, tick = 0;
 	while(ms == -1) // search for mouse
 	{
-		DEV_Sleep(30); // don't repeat this loop too quickly
+		Sleep(30); // don't repeat this loop too quickly
 		tick++;
 		if(tick > 5) // wait 5 ticks before accepting device id
 			ms = DEV_ReturnDeviceID(0);
@@ -572,7 +571,7 @@ static void GUI_DetectDevice(const HWND hW, const int buttonid)
 	tick = 0;
 	while(kb == -1) // search for keyboard
 	{
-		DEV_Sleep(30); // don't repeat this loop too quickly
+		Sleep(30); // don't repeat this loop too quickly
 		tick++;
 		if(tick > 5) // wait 5 ticks before accepting device id
 			kb = DEV_ReturnDeviceID(1);

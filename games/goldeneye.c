@@ -17,9 +17,9 @@
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, visit http://www.gnu.org/licenses/gpl-2.0.html
 //==========================================================================
+#include <windows.h>
 #include <math.h>
 #include "../global.h"
-#include "../device.h"
 #include "../maindll.h"
 #include "game.h"
 #include "memory.h"
@@ -116,7 +116,7 @@ static void GE_DetectMap(void)
 		for(int index = 0; index < 128; index++)
 		{
 			pointerdump[index] = BONDDATA;
-			DEV_Sleep(1);
+			Sleep(1);
 		}
 		GE_SortArray((int *)pointerdump, sizeof pointerdump / sizeof pointerdump[0]);
 		playerbase[PLAYER1] = pointerdump[0];

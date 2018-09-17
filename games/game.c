@@ -36,6 +36,9 @@ const char *GAME_Name(void);
 void GAME_Inject(void);
 void GAME_Quit(void);
 
+//==========================================================================
+// Purpose: check all game interfaces for game
+//==========================================================================
 int GAME_Status(void)
 {
 	const int upper = (sizeof(GAMELIST) / sizeof(GAMELIST[0]));
@@ -49,18 +52,24 @@ int GAME_Status(void)
 	}
 	return CURRENT_GAME != NULL ? 1 : 0;
 }
-
+//==========================================================================
+// Purpose: return game driver name
+//==========================================================================
 const char *GAME_Name(void)
 {
 	return CURRENT_GAME ? CURRENT_GAME->Name : NULL;
 }
-
+//==========================================================================
+// Purpose: inject via game driver
+//==========================================================================
 void GAME_Inject(void)
 {
 	if(CURRENT_GAME)
 		CURRENT_GAME->Inject();
 }
-
+//==========================================================================
+// Purpose: quit game driver
+//==========================================================================
 void GAME_Quit(void)
 {
 	if(CURRENT_GAME)

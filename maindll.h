@@ -27,7 +27,6 @@ extern int mousetogglekey;
 extern int mousetoggle;
 extern int mouselockonfocus;
 extern int mouseunlockonloss;
-extern int currentlyconfiguring;
 extern HWND emulatorwindow;
 extern int emuoverclock;
 extern int overridefov;
