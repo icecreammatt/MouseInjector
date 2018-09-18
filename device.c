@@ -260,13 +260,14 @@ int DEV_ReturnDeviceID(const int devicetype)
 	return -1;
 }
 //==========================================================================
-// Purpose: Wraps ManyMouse device name
+// Purpose: Returns the device name given a type
 //==========================================================================
 const char *DEV_Name(const int id)
 {
-	for(int devicetype = 0; devicetype <= 1; devicetype++)
-		if(ManyMouse_DeviceName(id, devicetype) != NULL)
-			return ManyMouse_DeviceName(id, devicetype);
+	if(ManyMouse_DeviceName(id, MOUSETYPE) != NULL)
+		return ManyMouse_DeviceName(id, MOUSETYPE);
+	else if(ManyMouse_DeviceName(id, KEYBOARDTYPE) != NULL)
+		return ManyMouse_DeviceName(id, KEYBOARDTYPE);
 	return NULL;
 }
 //==========================================================================

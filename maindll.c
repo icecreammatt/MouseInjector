@@ -670,9 +670,9 @@ static void INI_Load(const HWND hW, const int loadplayer)
 						}
 						else
 							INI_SetConfig(player, PROFILE[player].SETTINGS[CONFIG]); // player is not using custom config, assign keys from function
-						if(DEV_Name(PROFILE[player].SETTINGS[MOUSE]) == NULL || DEV_Type(PROFILE[player].SETTINGS[MOUSE]) == KEYBOARDTYPE) // device not connected or id is set used by a keyboard
+						if(DEV_Name(PROFILE[player].SETTINGS[MOUSE]) == NULL || DEV_Type(PROFILE[player].SETTINGS[MOUSE]) == KEYBOARDTYPE) // device not connected or id is used by a keyboard
 							PROFILE[player].SETTINGS[MOUSE] = defaultmouse;
-						if(DEV_Name(PROFILE[player].SETTINGS[KEYBOARD]) == NULL || DEV_Type(PROFILE[player].SETTINGS[KEYBOARD]) == MOUSETYPE) // device not connected or id is set used by a mouse
+						if(DEV_Name(PROFILE[player].SETTINGS[KEYBOARD]) == NULL || DEV_Type(PROFILE[player].SETTINGS[KEYBOARD]) == MOUSETYPE) // device not connected or id is used by a mouse
 							PROFILE[player].SETTINGS[KEYBOARD] = defaultkeyboard;
 					}
 				}
