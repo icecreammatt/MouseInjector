@@ -58,6 +58,7 @@ static const char pddifficulty[0x03][0x0E] = {"Agent", "Secret Agent", "Perfect 
 static const int pdmpstageids[0x10] = {0x32, 0x29, 0x17, 0x20, 0x42, 0x3C, 0x47, 0x41, 0x3B, 0x39, 0x44, 0x45, 0x3D, 0x25, 0x1F, 0x43}; // multiplayer stage ids
 static DiscordRichPresence presence; // presence struct for update function
 static int alreadyexec = 0; // has init already exec?
+static char thumbnailid[0x5]; // holds thumbnail id
 
 static void DRP_Init(void);
 void DRP_Update(void);
@@ -97,7 +98,6 @@ void DRP_Update(void)
 					time_t currenttime = time(NULL); // get current time from OS
 					presence.startTimestamp = currenttime - (EMU_ReadInt(!mpflag ? GE_sptime : GE_mptime) / 60); // convert in-game time (60 Hz) to seconds and subtract from current time to get starting time for current map
 				}
-				char thumbnailid[0x5];
 				sprintf(thumbnailid, "ge%1.2x", EMU_ReadInt(GE_stageid)); // set thumbnail id
 				presence.largeImageKey = thumbnailid;
 			}
@@ -136,7 +136,6 @@ void DRP_Update(void)
 						presence.startTimestamp = currenttime - gametime; // subtract from current time to get starting time for current map
 					}
 				}
-				char thumbnailid[0x5];
 				sprintf(thumbnailid, "pd%1.2x", EMU_ReadInt(PD_stageid)); // set thumbnail id
 				presence.largeImageKey = thumbnailid;
 			}

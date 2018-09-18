@@ -251,11 +251,11 @@ int DEV_ReturnKey(void)
 //==========================================================================
 // Purpose: Returns device id of detected input
 //==========================================================================
-int DEV_ReturnDeviceID(const int kbflag)
+int DEV_ReturnDeviceID(const int devicetype)
 {
 	ManyMouseEvent event; // hold current input event (movement, buttons, ect)
 	while(ManyMouse_PollEvent(&event))
-		if(!kbflag && (event.type == MANYMOUSE_EVENT_BUTTON || event.type == MANYMOUSE_EVENT_SCROLL) || kbflag && event.type == MANYMOUSE_EVENT_KEYBOARD)
+		if(devicetype == MOUSETYPE && (event.type == MANYMOUSE_EVENT_BUTTON || event.type == MANYMOUSE_EVENT_SCROLL) || devicetype == KEYBOARDTYPE && event.type == MANYMOUSE_EVENT_KEYBOARD)
 			return event.device;
 	return -1;
 }
@@ -264,9 +264,9 @@ int DEV_ReturnDeviceID(const int kbflag)
 //==========================================================================
 const char *DEV_Name(const int id)
 {
-	for(int kbflag = 0; kbflag < 2; kbflag++)
-		if(ManyMouse_DeviceName(id, kbflag) != NULL)
-			return ManyMouse_DeviceName(id, kbflag);
+	for(int devicetype = 0; devicetype <= 1; devicetype++)
+		if(ManyMouse_DeviceName(id, devicetype) != NULL)
+			return ManyMouse_DeviceName(id, devicetype);
 	return NULL;
 }
 //==========================================================================
@@ -274,7 +274,7 @@ const char *DEV_Name(const int id)
 //==========================================================================
 int DEV_Type(const int id)
 {
-	return ManyMouse_DeviceName(id, 0) != NULL ? 0 : 1; // 0 mouse : 1 keyboard
+	return ManyMouse_DeviceName(id, 0) != NULL ? MOUSETYPE : KEYBOARDTYPE; // 0 mouse : 1 keyboard
 }
 //==========================================================================
 // Purpose: Returns the index id within a type (for converting to device combobox)
@@ -284,7 +284,7 @@ int DEV_TypeIndex(const int id)
 	int kbcount = -1, mscount = -1;
 	for(int index = 0; index < DEV_Init(); index++)
 	{
-		if(!DEV_Type(index))
+		if(DEV_Type(index) == MOUSETYPE)
 			mscount++;
 		else
 			kbcount++;
@@ -296,7 +296,7 @@ int DEV_TypeIndex(const int id)
 //==========================================================================
 // Purpose: Converts a type index id to its real id (for converting from device combobox)
 //==========================================================================
-int DEV_TypeID(const int id, const int kbflag)
+int DEV_TypeID(const int id, const int devicetype)
 {
 	int kbcount = -1, mscount = -1;
 	for(int index = 0; index < DEV_Init(); index++)
@@ -305,7 +305,7 @@ int DEV_TypeID(const int id, const int kbflag)
 			mscount++;
 		else
 			kbcount++;
-		if(id == mscount && !kbflag || id == kbcount && kbflag)
+		if(id == mscount && devicetype == MOUSETYPE || id == kbcount && devicetype == KEYBOARDTYPE)
 			return index;
 	}
 	return 0;

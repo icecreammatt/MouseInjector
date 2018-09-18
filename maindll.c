@@ -132,9 +132,9 @@ static int Init(const HWND hW)
 		return 0;
 	for(int connectedindex = 0; connectedindex < DEV_Init(); connectedindex++) // get default devices
 	{
-		if(!DEV_Type(connectedindex) && defaultmouse == -1)
+		if(DEV_Type(connectedindex) == MOUSETYPE && defaultmouse == -1)
 			defaultmouse = connectedindex;
-		else if(DEV_Type(connectedindex) && defaultkeyboard == -1)
+		else if(DEV_Type(connectedindex) == KEYBOARDTYPE && defaultkeyboard == -1)
 			defaultkeyboard = connectedindex;
 		if(defaultmouse != -1 && defaultkeyboard != -1)
 			break;
@@ -352,7 +352,7 @@ static void GUI_Init(const HWND hW)
 	{
 		char devicename[256];
 		sprintf(devicename, "%d: %s", DEV_TypeIndex(connectedindex), DEV_Name(connectedindex)); // create string for combobox
-		SendMessage(GetDlgItem(hW, !DEV_Type(connectedindex) ? IDC_MOUSESELECT : IDC_KEYBOARDSELECT), CB_ADDSTRING, 0, (LPARAM)devicename); // add device to appropriate combobox
+		SendMessage(GetDlgItem(hW, DEV_Type(connectedindex) == MOUSETYPE ? IDC_MOUSESELECT : IDC_KEYBOARDSELECT), CB_ADDSTRING, 0, (LPARAM)devicename); // add device to appropriate combobox
 	}
 	SendMessage(GetDlgItem(hW, IDC_CONFIGBOX), CB_ADDSTRING, 0, (LPARAM)"Disabled"); // add default configs
 	SendMessage(GetDlgItem(hW, IDC_CONFIGBOX), CB_ADDSTRING, 0, (LPARAM)"WASD");
@@ -543,9 +543,8 @@ static void GUI_DetectDevice(const HWND hW, const int buttonid)
 		lastinputbutton = 0;
 		return;
 	}
-	else
-		lastinputbutton = buttonid;
-	EnableWindow(GetDlgItem(hW, buttonid), 0);
+	lastinputbutton = buttonid;
+	EnableWindow(GetDlgItem(hW, buttonid), 0); // disable button while detecting devices
 	int kb = -1, ms = -1, tick = 0;
 	while(ms == -1) // search for mouse
 	{
@@ -591,7 +590,8 @@ static void GUI_DetectDevice(const HWND hW, const int buttonid)
 			break;
 	}
 	SetDlgItemText(hW, buttonid, "Detect Input Devices");
-	EnableWindow(GetDlgItem(hW, buttonid), 1);
+	EnableWindow(GetDlgItem(hW, buttonid), 1); // enable detect devices button
+	EnableWindow(GetDlgItem(hW, IDC_REVERT), 1); // set revert button status to true
 	if(kb == -1 && ms == -1)
 		return;
 	if(ms != -1)
@@ -670,9 +670,9 @@ static void INI_Load(const HWND hW, const int loadplayer)
 						}
 						else
 							INI_SetConfig(player, PROFILE[player].SETTINGS[CONFIG]); // player is not using custom config, assign keys from function
-						if(DEV_Name(PROFILE[player].SETTINGS[MOUSE]) == NULL || DEV_Type(PROFILE[player].SETTINGS[MOUSE]) == 1) // device not connected or id is set used by a keyboard
+						if(DEV_Name(PROFILE[player].SETTINGS[MOUSE]) == NULL || DEV_Type(PROFILE[player].SETTINGS[MOUSE]) == KEYBOARDTYPE) // device not connected or id is set used by a keyboard
 							PROFILE[player].SETTINGS[MOUSE] = defaultmouse;
-						if(DEV_Name(PROFILE[player].SETTINGS[KEYBOARD]) == NULL || DEV_Type(PROFILE[player].SETTINGS[KEYBOARD]) == 0) // device not connected or id is set used by a mouse
+						if(DEV_Name(PROFILE[player].SETTINGS[KEYBOARD]) == NULL || DEV_Type(PROFILE[player].SETTINGS[KEYBOARD]) == MOUSETYPE) // device not connected or id is set used by a mouse
 							PROFILE[player].SETTINGS[KEYBOARD] = defaultkeyboard;
 					}
 				}
