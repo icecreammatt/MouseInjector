@@ -266,7 +266,7 @@ const char *DEV_Name(const int id)
 {
 	if(ManyMouse_DeviceName(id, MOUSETYPE) != NULL)
 		return ManyMouse_DeviceName(id, MOUSETYPE);
-	else if(ManyMouse_DeviceName(id, KEYBOARDTYPE) != NULL)
+	if(ManyMouse_DeviceName(id, KEYBOARDTYPE) != NULL)
 		return ManyMouse_DeviceName(id, KEYBOARDTYPE);
 	return NULL;
 }
