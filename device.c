@@ -63,7 +63,7 @@ int DEV_Init(void)
 	connected = ManyMouse_Init();
 	int activemice = 0, activekeyboards = 0;
 	for(int index = 0; index < connected; index++)
-		if(!DEV_Type(index))
+		if(DEV_Type(index) == MOUSETYPE)
 			activemice = 1; 
 		else
 			activekeyboards = 1;
