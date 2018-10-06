@@ -290,7 +290,7 @@ int DEV_TypeIndex(const int id)
 		else
 			kbcount++;
 		if(index == id)
-			return !DEV_Type(id) ? mscount : kbcount;
+			return DEV_Type(index) == MOUSETYPE ? mscount : kbcount;
 	}
 	return 0;
 }
@@ -302,7 +302,7 @@ int DEV_TypeID(const int id, const int devicetype)
 	int kbcount = -1, mscount = -1;
 	for(int index = 0; index < DEV_Init(); index++)
 	{
-		if(!DEV_Type(index))
+		if(DEV_Type(index) == MOUSETYPE)
 			mscount++;
 		else
 			kbcount++;
