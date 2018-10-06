@@ -151,14 +151,14 @@ DWORD WINAPI DEV_InjectThread()
 					{
 						for(int button = 0; button < 16; button++)
 						{
-							if(event.item == 0) // if VK_WHEELUP/VKWHEELDOWN
+							if(event.item == 0) // if VK_WHEELUP/VK_WHEELDOWN
 							{
 								if(event.value > 0 && PROFILE[player].BUTTONPRIM[button] == VK_WHEELUP || event.value < 0 && PROFILE[player].BUTTONPRIM[button] == VK_WHEELDOWN)
 									DEVICE[player].BUTTONPRIM[button] = event.value != 0 ? 1 : 0; // filter value to 1 if 1 or -1
 								if(event.value > 0 && PROFILE[player].BUTTONSEC[button] == VK_WHEELUP || event.value < 0 && PROFILE[player].BUTTONSEC[button] == VK_WHEELDOWN)
 									DEVICE[player].BUTTONSEC[button] = event.value != 0 ? 1 : 0;
 							}
-							else // if VK_WHEELRIGHT/VKWHEELLEFT
+							else // if VK_WHEELRIGHT/VK_WHEELLEFT
 							{
 								if(event.value > 0 && PROFILE[player].BUTTONPRIM[button] == VK_WHEELLEFT || event.value < 0 && PROFILE[player].BUTTONPRIM[button] == VK_WHEELRIGHT)
 									DEVICE[player].BUTTONPRIM[button] = event.value != 0 ? 1 : 0;
