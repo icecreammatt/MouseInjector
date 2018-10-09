@@ -551,9 +551,9 @@ static void GUI_DetectDevice(const HWND hW, const int buttonid)
 		Sleep(30); // don't repeat this loop too quickly
 		tick++;
 		if(tick > 5) // wait 5 ticks before accepting device id
-			ms = DEV_ReturnDeviceID(0);
+			ms = DEV_ReturnDeviceID(MOUSETYPE);
 		else
-			DEV_ReturnDeviceID(1); // flush input
+			DEV_ReturnDeviceID(KEYBOARDTYPE); // flush keyboard input
 		if(tick == 10)
 			SetDlgItemText(hW, buttonid, "..Click Mouse..5..");
 		else if(tick == 35)
@@ -573,9 +573,9 @@ static void GUI_DetectDevice(const HWND hW, const int buttonid)
 		Sleep(30); // don't repeat this loop too quickly
 		tick++;
 		if(tick > 5) // wait 5 ticks before accepting device id
-			kb = DEV_ReturnDeviceID(1);
+			kb = DEV_ReturnDeviceID(KEYBOARDTYPE);
 		else
-			DEV_ReturnDeviceID(0); // flush input
+			DEV_ReturnDeviceID(MOUSETYPE); // flush mouse input
 		if(tick == 10)
 			SetDlgItemText(hW, buttonid, "..Press Any Key..5.."); // we're assuming the user knows where the any key is...
 		else if(tick == 35)

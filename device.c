@@ -45,11 +45,11 @@ int DEV_Init(void);
 void DEV_Quit(void);
 void *DEV_PollInput();
 int DEV_ReturnKey(void);
-int DEV_ReturnDeviceID(const int kbflag);
+int DEV_ReturnDeviceID(const int devicetype);
 const char *DEV_Name(const int id);
 int DEV_Type(const int id);
 int DEV_TypeIndex(const int id);
-int DEV_TypeID(const int id, const int kbflag);
+int DEV_TypeID(const int id, const int devicetype);
 
 //==========================================================================
 // Purpose: First called upon device launch
