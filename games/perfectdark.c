@@ -31,6 +31,7 @@
 #define BIKEXROTATIONLIMIT 6.282184601 // 0x40C907A8
 #define BIKEROLLLIMIT 0.7852724195 // 0xBF49079D/0x3F49079D
 #define BIKESPEEDLIMIT 0.5 // 0x3F000000
+#define PI 3.1415927 // 0x40490FDB
 // PERFECT DARK ADDRESSES - OFFSET ADDRESSES BELOW (REQUIRES PLAYERBASE/BIKEBASE TO USE)
 #define PD_crouchflag 0x801BB74C - 0x801BB6A0
 #define PD_deathflag 0x801BB778 - 0x801BB6A0
@@ -65,6 +66,7 @@
 #define PD_defaultfov 0x802EAA5C // field of view default
 #define PD_defaultfovzoom 0x802EACFC // field of view default for zoom
 #define PD_introcounter 0x800624C4 // counter for intro
+#define PD_pickupyaxisthreshold 0x803CAE78 // y axis threshold on picking up weapons
 
 static unsigned int playerbase[4] = {0, 0, 0, 0}; // current player's joannadata address
 static unsigned int bikebase[4][2] = {{0, 0}, {0, 0}, {0, 0}, {0, 0}}; // hoverbike's address and player's last grab state (used to find the exact moment when the player hops on a bike)
@@ -450,6 +452,7 @@ static void PD_InjectHacks(void)
 	const int addressarray[33] = {0x802C07B8, 0x802C07BC, 0x802C07EC, 0x802C07F0, 0x802C07FC, 0x802C0800, 0x802C0808, 0x802C0820, 0x802C0824, 0x802C082C, 0x802C0830, 0x803C7968, 0x803C796C, 0x803C7970, 0x803C7974, 0x803C7978, 0x803C797C, 0x803C7980, 0x803C7984, 0x803C7988, 0x803C798C, 0x803C7990, 0x803C7994, 0x803C7998, 0x803C799C, 0x803C79A0, 0x803C79A4, 0x803C79A8, 0x803C79AC, 0x803C79B0, 0x803C79B4, 0x803C79B8, 0x803C79BC}, codearray[33] = {0x0BC69E5A, 0x8EA10120, 0x0BC69E5F, 0x263107A4, 0x0BC69E63, 0x4614C500, 0x46120682, 0x0BC69E67, 0x26100004, 0x0BC69E6B, 0x4614C500, 0x54200003, 0x00000000, 0xE6B21668, 0xE6A8166C, 0x0BC281F0, 0x8EA10120, 0x50200001, 0xE6380530, 0x0BC281FD, 0x8EA10120, 0x50200001, 0xE6340534, 0x0BC28201, 0x8EA10120, 0x50200001, 0xE6380530, 0x0BC2820A, 0x8EA10120, 0x50200001, 0xE6340534, 0x0BC2820D, 0x00000000}; // add branch to crosshair code so cursor aiming mode is absolute (without jitter)
 	for(int index = 0; index < 33; index++) // inject code array
 		EMU_WriteInt(addressarray[index], codearray[index]);
+	EMU_WriteFloat(PD_pickupyaxisthreshold, (-60.f * (PI * 2.f)) / 360.f); // overwrite default y axis limit for picking up items (from -45 to -60)
 	if(overridefov != 60) // override default fov
 	{
 		float newfov = overridefov;

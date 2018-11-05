@@ -27,6 +27,7 @@
 #define GUNAIMLIMIT 6.879164696 // 0x40DC221E
 #define CROSSHAIRLIMIT 5.159373283 // 0x40A51996
 #define TANKXROTATIONLIMIT 6.283185005 // 0x40C90FDA
+#define PI 3.1415927 // 0x40490FDB
 // GOLDENEYE ADDRESSES - OFFSET ADDRESSES BELOW (REQUIRES PLAYERBASE TO USE)
 #define GE_crouchflag 0x800D2FFC - 0x800D2F60
 #define GE_deathflag 0x800D3038 - 0x800D2F60
@@ -60,6 +61,7 @@
 #define GE_crosshairimage 0x0029DE8C // crosshair image (rom)
 #define GE_introcounter 0x8002A8CC // counter for intro
 #define GE_seenintroflag 0x8002A930 // seen intro flag
+#define GE_pickupyaxisthreshold 0x800532E0 // y axis threshold on picking up weapons
 
 static unsigned int playerbase[4] = {0, 0, 0, 0}; // current player's bonddata address
 static int safetoduck[4] = {1, 1, 1, 1}, safetostand[4] = {0, 0, 0, 0}, crouchstance[4] = {0, 0, 0, 0}; // used for crouch toggle changes (limits tick-tocking)
@@ -350,6 +352,7 @@ static void GE_InjectHacks(void)
 	const int addressarray[27] = {0x000B7EA0, 0x000B7EB8, 0x0009C7F8, 0x0009C7FC, 0x0009C80C, 0x0009C810, 0x0009C998, 0x0009C99C, 0x0009C9AC, 0x0009C9B0, 0x000AE4DC, 0x000AE4E0, 0x000AE4E4, 0x000AE4E8, 0x000AE4EC, 0x000AE4F0, 0x000AE4F4, 0x000AE4F8, 0x000AE4FC, 0x000AE500, 0x000AE504, 0x000AE508, 0x000AE50C, 0x000AE510, 0x000AE514, 0x000AE518, 0x000AE51C}, codearray[27] = {0x00000000, 0x00000000, 0x0BC1E66B, 0x460C5100, 0x0BC1E66F, 0x460E3280, 0x0BC1E673, 0x460C4100, 0x0BC1E677, 0x460E5200, 0x8C590124, 0x53200001, 0xE4440FF0, 0x0BC19F34, 0x8C590124, 0x53200001, 0xE44A0FF4, 0x0BC19F39, 0x8C590124, 0x53200001, 0xE4441004, 0x0BC19F9C, 0x8C590124, 0x53200001, 0xE4481008, 0x0BC19FA1, 0x00000000}; // disable autostand code, add branch to crosshair code so cursor aiming mode is absolute (without jitter)
 	for(int index = 0; index < 27; index++) // inject code array
 		EMU_WriteROM(addressarray[index], codearray[index]);
+	EMU_WriteFloat(GE_pickupyaxisthreshold, (60.f / 180.f) * -PI); // overwrite default y axis limit for picking up items (from -45 to -60)
 	if(overridefov != 60) // override default fov
 	{
 		float newfov = overridefov;
