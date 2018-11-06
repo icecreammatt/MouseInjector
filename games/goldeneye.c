@@ -199,7 +199,7 @@ static void GE_Inject(void)
 			{
 				GE_ResetCrouchToggle(player); // reset crouch toggle if in tank
 				float tankx = EMU_ReadFloat(GE_tankxrot);
-				if(!cursoraimingflag)
+				if(!cursoraimingflag || EMU_ReadInt(playerbase[player] + GE_currentweapon) == 32) // if not aiming (or geaimmode is off) or player is driving tank with tank equipped as weapon, then use regular mouselook calculation
 					tankx += DEVICE[player].XPOS / 10.0f * sensitivity / (360 / TANKXROTATIONLIMIT * 2.5) * (fov / basefov);
 				else
 					tankx += aimx[player] / (360 / TANKXROTATIONLIMIT * 2.5) * (fov / basefov);
@@ -291,6 +291,7 @@ static void GE_AimMode(const int player, const int aimingflag, const float fov)
 	const float crosshairx = EMU_ReadFloat(playerbase[player] + GE_crosshairx), crosshairy = EMU_ReadFloat(playerbase[player] + GE_crosshairy), offsetpos[2][33] = {{0, 0, 0, 0, 0.1625, 0.1625, 0.15, 0.5, 0.8, 0.4, 0.5, 0.5, 0.48, 0.9, 0.25, 0.6, 0.6, 0.7, 0.25, 0.15, 0.1625, 0.1625, 0.5, 0.5, 0.9, 0.9, 0, 0, 0, 0, 0, 0.4}, {0, 0, 0, 0, 0.1, 0.1, 0.2, 0.325, 1, 0.3, 0.425, 0.425, 0.45, 0.95, 0.1, 0.55, 0.5, 0.7, 0.25, 0.1, 0.1, 0.1, 0.275, 1, 0.9, 0.8, 0, 0, 0, 0, 0, 0.25}}; // table of X/Y offset for weapons
 	const int currentweapon = EMU_ReadInt(playerbase[player] + GE_currentweapon);
 	const float threshold = 0.72f, speed = 475.f, sensitivity = 292.f;
+	const int aimingintank = EMU_ReadInt(GE_tankflag) == 1 && currentweapon == 32; // flag if player is driving tank with tank equipped as weapon
 	if(aimingflag) // if player is aiming
 	{
 		const float mouseaccel = PROFILE[player].SETTINGS[ACCELERATION] ? sqrt(DEVICE[player].XPOS * DEVICE[player].XPOS + DEVICE[player].YPOS * DEVICE[player].YPOS) / TICKRATE / 12.0f * PROFILE[player].SETTINGS[ACCELERATION] : 0;
@@ -298,6 +299,8 @@ static void GE_AimMode(const int player, const int aimingflag, const float fov)
 		crosshairposy[player] += (!PROFILE[player].SETTINGS[INVERTPITCH] ? DEVICE[player].YPOS : -DEVICE[player].YPOS) / 10.0f * (PROFILE[player].SETTINGS[SENSITIVITY] / sensitivity) * fmax(mouseaccel, 1);
 		crosshairposx[player] = ClampFloat(crosshairposx[player], -CROSSHAIRLIMIT, CROSSHAIRLIMIT); // apply clamp then inject
 		crosshairposy[player] = ClampFloat(crosshairposy[player], -CROSSHAIRLIMIT, CROSSHAIRLIMIT);
+		if(aimingintank) // if player is aiming while driving tank with tank equipped as weapon, set x axis crosshair to 0 (like the original game - so you cannot aim across the screen because the tank barrel is locked in the center)
+			crosshairposx[player] = 0;
 		EMU_WriteFloat(playerbase[player] + GE_crosshairx, crosshairposx[player]);
 		EMU_WriteFloat(playerbase[player] + GE_crosshairy, crosshairposy[player]);
 		EMU_WriteFloat(playerbase[player] + GE_gunx, crosshairposx[player] * (1.11f + (currentweapon >= 0 && currentweapon <= 32 ? offsetpos[0][currentweapon] : 0.15f) * 1.5f) + fov - 1); // calculate and inject the gun angles (uses pre-made pos table or if unknown weapon use fail-safe value)
