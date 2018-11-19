@@ -355,7 +355,9 @@ static void GE_InjectHacks(void)
 	const int addressarray[27] = {0x000B7EA0, 0x000B7EB8, 0x0009C7F8, 0x0009C7FC, 0x0009C80C, 0x0009C810, 0x0009C998, 0x0009C99C, 0x0009C9AC, 0x0009C9B0, 0x000AE4DC, 0x000AE4E0, 0x000AE4E4, 0x000AE4E8, 0x000AE4EC, 0x000AE4F0, 0x000AE4F4, 0x000AE4F8, 0x000AE4FC, 0x000AE500, 0x000AE504, 0x000AE508, 0x000AE50C, 0x000AE510, 0x000AE514, 0x000AE518, 0x000AE51C}, codearray[27] = {0x00000000, 0x00000000, 0x0BC1E66B, 0x460C5100, 0x0BC1E66F, 0x460E3280, 0x0BC1E673, 0x460C4100, 0x0BC1E677, 0x460E5200, 0x8C590124, 0x53200001, 0xE4440FF0, 0x0BC19F34, 0x8C590124, 0x53200001, 0xE44A0FF4, 0x0BC19F39, 0x8C590124, 0x53200001, 0xE4441004, 0x0BC19F9C, 0x8C590124, 0x53200001, 0xE4481008, 0x0BC19FA1, 0x00000000}; // disable autostand code, add branch to crosshair code so cursor aiming mode is absolute (without jitter)
 	for(int index = 0; index < 27; index++) // inject code array
 		EMU_WriteROM(addressarray[index], codearray[index]);
+#ifndef SPEEDRUN_BUILD // gives unfair advantage, remove for speedrun build
 	EMU_WriteFloat(GE_pickupyaxisthreshold, (60.f / 180.f) * -PI); // overwrite default y axis limit for picking up items (from -45 to -60)
+#endif
 	if(overridefov != 60) // override default fov
 	{
 		float newfov = overridefov;
@@ -363,8 +365,10 @@ static void GE_InjectHacks(void)
 		EMU_WriteROM(GE_defaultfov, 0x3C010000 + (short)(unsignedinteger / 0x10000));
 		EMU_WriteROM(GE_defaultfovinit, 0x3C010000 + (short)(unsignedinteger / 0x10000));
 		EMU_WriteROM(GE_defaultfovzoom, 0x3C010000 + (short)(unsignedinteger / 0x10000));
+#ifndef SPEEDRUN_BUILD // gives unfair advantage, remove for speedrun build
 		if(overridefov > 60)
 			EMU_WriteFloat(GE_defaultzoomspeed, (overridefov - 60) * ((1.7f - 0.909091f) / 60.0f) + 0.909091f); // adjust zoom speed default (0.909091 default, 1.7 max)
+#endif
 	}
 	if(geshowcrosshair) // inject show crosshair hack
 	{

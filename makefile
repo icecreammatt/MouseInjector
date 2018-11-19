@@ -17,10 +17,15 @@ UIDIR = $(SRCDIR)ui/
 DLLNAME = $(SRCDIR)Mouse_Injector.dll
 
 #Compiler flags
-USE_DISCORD_PRESENCE = comment line to remove discord rich presence (requires clean and rebuild)
+USE_DISCORD_PRESENCE = uncomment line to add discord rich presence (requires clean and rebuild)
+SPEEDRUN_BUILD = uncomment line to build speedrun version (requires clean and rebuild)
 CFLAGS = -ansi -O2 -m32 -std=c11 -Wall
 ifdef USE_DISCORD_PRESENCE
 	CFLAGS += -DADD_DISCORD_PRESENCE
+endif
+ifdef SPEEDRUN_BUILD
+	CFLAGS += -DSPEEDRUN_BUILD
+	DLLNAME = $(SRCDIR)Mouse_Injector_Speedrun.dll
 endif
 WARNINGS = -Wextra -pedantic -Wno-parentheses -Wno-strict-aliasing
 RESFLAGS = -F pe-i386 --input-format=rc -O coff

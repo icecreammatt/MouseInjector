@@ -366,6 +366,9 @@ static void GUI_Init(const HWND hW)
 	SendMessage(GetDlgItem(hW, IDC_SLIDER02), TBM_SETRANGEMAX, 0, 18);
 	SendMessage(GetDlgItem(hW, IDC_FOV), TBM_SETRANGEMIN, 0, 40);
 	SendMessage(GetDlgItem(hW, IDC_FOV), TBM_SETRANGEMAX, 0, 120);
+#ifdef SPEEDRUN_BUILD // replace info box with details about the speedrun build
+	SetDlgItemText(hW, IDC_INFO, "The speedrun build removes the FOV zoom speed adjustment for GE. This is to ensure all players will have the same watch/weapon zoom speed regardless of their FOV setting.\n\nIt also removes Y axis pickup threshold adjustment for GE/PD so it's the original value (-45 degrees).");
+#endif
 }
 //==========================================================================
 // Purpose: refresh the interface and display current player's settings
@@ -800,7 +803,7 @@ DLLEXPORT void CALL ControllerCommand(int Control, BYTE *Command)
 //==========================================================================
 DLLEXPORT void CALL DllAbout(HWND hParent)
 {
-	MessageBox(hParent, "Mouse Injector for GE/PD (Build: "__DATE__")\nCopyright (C) "__CURRENTYEAR__", Carnivorous", "Mouse Injector - About", MB_ICONINFORMATION | MB_OK);
+	MessageBox(hParent, "Mouse Injector for GE/PD "__MOUSE_INECTOR_VERSION__" (Build: "__DATE__")\nCopyright (C) "__CURRENTYEAR__", Carnivorous", "Mouse Injector - About", MB_ICONINFORMATION | MB_OK);
 }
 //==========================================================================
 // Purpose: Optional function that is provided to allow the user to configure the DLL
@@ -837,6 +840,9 @@ DLLEXPORT void CALL GetDllInfo(PLUGIN_INFO *PluginInfo)
 	PluginInfo->Version = 0xFBAD; // no emulator supports this other than my disgusting version of 1964 (awful hack that i created because plugins are not complicated enough and i don't know what the f**k i am doing as evident from the code i've written)
 	PluginInfo->Type = PLUGIN_TYPE_CONTROLLER;
 	sprintf(PluginInfo->Name, "Mouse Injector for GE/PD "__MOUSE_INECTOR_VERSION__"");
+#ifdef SPEEDRUN_BUILD
+	sprintf(PluginInfo->Name, "%s (Speedrun Build)", PluginInfo->Name);
+#endif
 }
 //==========================================================================
 // Purpose: Get the current state of the controllers buttons
