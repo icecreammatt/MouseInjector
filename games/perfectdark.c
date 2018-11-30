@@ -453,7 +453,8 @@ static void PD_InjectHacks(void)
 	for(int index = 0; index < 33; index++) // inject code array
 		EMU_WriteInt(addressarray[index], codearray[index]);
 #ifndef SPEEDRUN_BUILD // gives unfair advantage, remove for speedrun build
-	EMU_WriteFloat(PD_pickupyaxisthreshold, (-60.f * (PI * 2.f)) / 360.f); // overwrite default y axis limit for picking up items (from -45 to -60)
+	if((unsigned int)EMU_ReadInt(PD_pickupyaxisthreshold) == 0xBF4907A9) // if safe to overwrite
+		EMU_WriteFloat(PD_pickupyaxisthreshold, (-60.f * (PI * 2.f)) / 360.f); // overwrite default y axis limit for picking up items (from -45 to -60)
 #endif
 	if(overridefov != 60) // override default fov
 	{
