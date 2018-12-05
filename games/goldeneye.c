@@ -156,7 +156,7 @@ static void GE_DetectMap(void)
 static void GE_Inject(void)
 {
 	GE_DetectMap();
-	if(EMU_ReadInt(GE_menupage) == 0) // hacks can only be injected at boot sequence before code blocks are cached, so inject at legal screen
+	if(EMU_ReadInt(GE_menupage) < 1) // hacks can only be injected at boot sequence before code blocks are cached, so inject until the main menu
 		GE_InjectHacks();
 	for(int player = PLAYER1; player < ALLPLAYERS; player++)
 	{
@@ -356,7 +356,7 @@ static void GE_InjectHacks(void)
 	for(int index = 0; index < 27; index++) // inject code array
 		EMU_WriteROM(addressarray[index], codearray[index]);
 #ifndef SPEEDRUN_BUILD // gives unfair advantage, remove for speedrun build
-	if((unsigned int)EMU_ReadInt(GE_pickupyaxisthreshold) == 0xBF490FDB) // if safe to overwrite
+	if((unsigned int)EMU_ReadInt(GE_pickupyaxisthreshold) == 0xBF490FDB && EMU_ReadInt(GE_menupage) == 0) // if safe to overwrite
 		EMU_WriteFloat(GE_pickupyaxisthreshold, -60.f * PI / 180.f); // overwrite default y axis limit for picking up items (from -45 to -60)
 #endif
 	if(overridefov != 60) // override default fov
