@@ -1,7 +1,7 @@
 //==========================================================================
 // Mouse Injector Plugin
 //==========================================================================
-// Copyright (C) 2018 Carnivorous
+// Copyright (C) 2016-2019 Carnivorous
 // All rights reserved.
 //
 // Mouse Injector is free software; you can redistribute it and/or modify it
@@ -30,6 +30,7 @@ static const GAMEDRIVER **GAMELIST[] =
 };
 
 static const GAMEDRIVER *CURRENT_GAME = NULL;
+static const int upper = (sizeof(GAMELIST) / sizeof(GAMELIST[0]));
 
 int GAME_Status(void);
 const char *GAME_Name(void);
@@ -41,7 +42,6 @@ void GAME_Quit(void);
 //==========================================================================
 int GAME_Status(void)
 {
-	const int upper = (sizeof(GAMELIST) / sizeof(GAMELIST[0]));
 	const GAMEDRIVER *THIS_GAME;
 	CURRENT_GAME = NULL;
 	for(int i = 0; (i < upper) && (CURRENT_GAME == NULL); i++)
